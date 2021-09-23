@@ -80,9 +80,6 @@
       ]
     },
     {
-      "name": "Off"
-    },
-    {
       "name": "Fireworks",
       "um": [
         "byte Firework Count"
@@ -93,6 +90,9 @@
       ],
       "default": [1],
       "max": [20]
+    },
+    {
+      "name": "Off"
     }
   ],
   "insert": [
