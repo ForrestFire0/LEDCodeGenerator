@@ -61,10 +61,12 @@ void runLEDs() {
             FastLED.setBrightness(255 - cos8((byte) i * 4.26666667));
             break;
         case DOT:
-            leds[d.d.led] = d.d.secondaryColor;
+            leds[d.d.intled] = d.d.secondaryColor;
             d.d.led += spdInc(d.d.speed);
-            if (d.d.led == NUM_LEDS) d.d.led = 0;
-            leds[d.d.led] = d.d.color;
+            d.d.intled = (int) d.d.led;
+            if (d.d.intled == NUM_LEDS) d.d.led = 0;
+            leds[d.d.intled] = d.d.color;
+//            printLEDs();
             break;
         case HSV_ROTATE:
             fri(i, spdInc(d.hr.pulseSpeed)); //I increments with speed. Rollover increment.
@@ -192,4 +194,11 @@ inline __attribute__((always_inline)) void addToLED(int i, CRGB color) {
     if (i >= NUM_LEDS) i -= NUM_LEDS;
     if (i < 0) i += NUM_LEDS;
     leds[i] += color;
+}
+
+void printLEDs() {
+    for(int i = 0; i < 867; i++) {
+        if(leds[i].r > 0 || leds[i].g > 0 || leds[i].b > 0);
+        Serial.println(i);
+    }
 }

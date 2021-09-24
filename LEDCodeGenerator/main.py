@@ -1,4 +1,5 @@
 import json
+import os
 
 debug_setters = False
 update_temp = True
@@ -119,7 +120,7 @@ def generateLEDOptions():
 
 
 def generateHTMLString():
-    html = open("C:\\Users\\Forrest Milner\\Documents\\Arduino\\ESP8266LEDServer\\template.html", 'r')
+    html = open(os.path.dirname(__file__) + '/../template.html', 'r')
     lines = html.readlines()
     ret = ''
     for line in lines:
@@ -130,7 +131,7 @@ def generateHTMLString():
         elif len(line.strip()) > 0:
             ret += line.strip() + '\\\n'
     if update_temp:
-        html = open("C:\\Users\\Forrest Milner\\Documents\\Arduino\\ESP8266LEDServer\\temp.html", 'w+')
+        html = open(os.path.dirname(__file__) + '/../temp.html', 'w+')
         html.truncate(0)
         html.write(ret.replace('\\', '').replace('%i', '2'))
     ret = 'char HTMLTemplate[] = "' + ret[:-2].replace('"', '\\"') + '";\n'
@@ -139,7 +140,6 @@ def generateHTMLString():
 
 
 def generateOptionsVariable():
-    # ret = "char optionsString[300];  void
     ret = ""
     i = 0
     for mode in data['modes']:
@@ -167,7 +167,7 @@ def firstLowerLetter(string):
 
 if __name__ == '__main__':
     data = json.load(open("config.json"))
-    fileout = open("C:\\Users\\Forrest Milner\\Documents\\Arduino\\ESP8266LEDServer\\generated.h", 'w+')
+    fileout = open(os.path.dirname(__file__) + '/../generated.h', 'w+')
     fileout.truncate(0)
     used_names = []
     for m in data['modes']:  # Give it a class name, a unique variable name.

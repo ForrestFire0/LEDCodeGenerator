@@ -27,7 +27,8 @@
         "byte Speed"
       ],
       "im": [
-        "float led"
+        "float led",
+        "uint16_t intled"
       ],
       "default": ["#ff0000", "#000000", 118]
     },

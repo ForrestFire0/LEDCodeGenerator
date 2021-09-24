@@ -20,6 +20,7 @@ struct DotData {
      CRGB secondaryColor;
      byte speed;
      float led;
+     uint16_t intled;
 };
 
 struct HSVRotateData {
@@ -46,13 +47,13 @@ struct PulseRandomData {
      byte pulseSpeed;
 };
 
-struct OffData {
-};
-
 struct FireworksData {
      byte fireworkCount;
      byte oldfc;
      Firework* fireworks;
+};
+
+struct OffData {
 };
 
 union Data {
@@ -63,14 +64,14 @@ union Data {
      SolidData s;
      PulseData p;
      PulseRandomData pr;
-     OffData o;
      FireworksData f;
+     OffData o;
 } d;
 
 
 //**LEDOptions**
-char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Rotate", "Solid", "Pulse", "Pulse Random", "Off", "Fireworks"};
-enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_ROTATE, SOLID, PULSE, PULSE_RANDOM, OFF, FIREWORKS};
+char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Rotate", "Solid", "Pulse", "Pulse Random", "Fireworks", "Off"};
+enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_ROTATE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, OFF};
 
 //**SETTERS CODE**
 void fillInArgs(Mode selected, ESP8266WebServer &server) {
@@ -107,10 +108,10 @@ void fillInArgs(Mode selected, ESP8266WebServer &server) {
      case PULSE_RANDOM:
         d.pr.pulseSpeed = (byte) server.arg(1).toInt();
         break;
-     case OFF:
-        break;
      case FIREWORKS:
         d.f.fireworkCount = (byte) server.arg(1).toInt();
+        break;
+     case OFF:
         break;
      }
 }
@@ -151,7 +152,7 @@ font-size: min(6vw, 30px);\
 <h1>LED Controller</h1>\
 <center>\
 <select onchange='change()'>\
-<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Rotate</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Off</option><option value='8'>Fireworks</option>\
+<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Rotate</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Off</option>\
 </select>\
 <div id='s'></div>\
 </center>\
@@ -167,8 +168,8 @@ const inputs = {\
      'Solid': ['Color: <input type=\"color\" id=\"0\" value=\"#0f0f0f\" oninput=\"u()\"><br>',1],\
      'Pulse': ['Pulse Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u()\"><br>Pulse Intensity: <input type=\"range\" id=\"1\" max=\"255\" value=\"127\" oninput=\"u()\"><br>Color: <input type=\"color\" id=\"2\" value=\"#0000ff\" oninput=\"u()\"><br>',3],\
      'Pulse Random': ['Pulse Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u()\"><br>',1],\
-     'Off': ['',0],\
      'Fireworks': ['Firework Count: <input type=\"range\" id=\"0\" max=\"20\" value=\"1\" oninput=\"u()\"><br>',1],\
+     'Off': ['',0],\
 };\
 const s = document.getElementsByTagName('select')[0];\
 s.selectedIndex = %i;\

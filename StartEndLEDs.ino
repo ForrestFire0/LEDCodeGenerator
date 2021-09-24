@@ -20,6 +20,7 @@ void startSelected() {
             clearLEDs();
             d.d.color = CRGB::Red;
             d.d.speed = 2;
+            d.d.led = 400;
             break;
         case FIREWORKS:
             needFlip = true;

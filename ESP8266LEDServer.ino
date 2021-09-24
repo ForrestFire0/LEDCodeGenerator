@@ -3,7 +3,7 @@
 #include <ESP8266WebServer.h>
 #include <FastLED.h>
 #include "generated.h"
-    
+
 /**
     Todo:
     - General brightness modifier on the app
@@ -14,7 +14,8 @@
 #define STASSID "umd-iot"
 #define STAPSK  "2kbgxi8svgye"
 #define ENABLE_WIFI
-#define ENABLE_INTRO
+//#define ENABLE_INTRO
+//#define ENABLE_FRAME_WAIT_FOR_KEY
 #define REFRESH_RATE 60 //Change this and animations get fucked.
 //#define TIME_DEBUG
 
@@ -73,7 +74,7 @@ void setup(void) {
         Mode oldSelected = selected;
         selected = (Mode) server.arg(0).toInt();
         if (selected != oldSelected) {
-            
+
             Serial.print(F("Set mode: "));
             Serial.println(LEDOptions[(byte) selected]);
             startSelected();
@@ -92,9 +93,14 @@ void setup(void) {
 
 //Q: Do we want to write a new frame every time this function is called?
 unsigned long nextRun = 0;
-
-
 void loop(void) {
+#ifdef ENABLE_FRAME_WAIT_FOR_KEY
+    while (!Serial.available()) {
+        yield();
+        server.handleClient();
+    }
+    while (Serial.available()) Serial.read();
+#endif
     server.handleClient();
     if (millis() - nextRun > 1000 / REFRESH_RATE) {
         nextRun += 1000 / REFRESH_RATE;
