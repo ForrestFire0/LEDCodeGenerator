@@ -46,7 +46,9 @@ def generateStructs():
 def getInputFromType(ty):
     return {
         "CRGB": "color",
-        "byte": "range"
+        "byte": "range",
+        "bool": "checkbox",
+        "boolean": "checkbox"
     }[ty]
 
 
@@ -67,11 +69,15 @@ def generateHTMLCode():
                     else:
                         ret += ' max="255"'
                 try:
-                    ret += ' value="' + str(mode['default'][i]) + '" oninput="u()"'
+                    if input_type == 'color' or input_type == 'range':
+                        ret += ' value="' + str(mode['default'][i]) + '"'
+                    if input_type == 'checkbox':
+                        if mode['default'][i]:
+                            ret += 'checked'
                 except (KeyError, IndexError):
                     print("Fail: Unmatched um item with default parameter for mode " + mode['name'])
                     exit(-1)
-                ret += '><br>'
+                ret += ' oninput="u()"><br>'
                 i = i + 1
         ret += '\',' + str(len(mode.get('um') if mode.get('um') else [])) + '],\n'
 
@@ -92,13 +98,13 @@ def generateSettersCode():
                 input_type = getInputFromType(ty)
                 name = 'd.' + mode['v_name'] + '.' + convertToCamelCase(' '.join(splits))
                 if input_type == "range":
-                    ret += '        ' + name + ' = (byte) server.arg(' + str(
-                        i + 1) + ').toInt();\n'  # Add one to args cause the first arg is the mode.
+                    ret += '        ' + name + ' = (byte) server.arg(' + str(i + 1) + ').toInt();\n'
                 if input_type == "color":
                     # First, we have to generate a char array with the 6 character html string.
-                    ret += '        server.arg(' + str(
-                        i + 1) + ').substring(1).toCharArray(buff, 7);\n'  # Add one to args cause the first arg is the mode.
+                    ret += '        server.arg(' + str(i + 1) + ').substring(1).toCharArray(buff, 7);\n'
                     ret += '        ' + name + ' = CRGB(strtoul(buff, NULL, 16));\n'
+                if input_type == 'checkbox':
+                    ret += '        ' + name + ' = server.arg(' + str(i + 1) + ').equals("true");\n'
                 if debug_setters:
                     ret += '        Serial.print("' + name + ': ");\n        ' + 'Serial.println(' + name + ');\n'
                 i = i + 1
@@ -126,16 +132,15 @@ def generateHTMLString():
     for line in lines:
         if line.strip() == "%%%OPTIONS%%%":
             ret += generateOptionsString() + '\\\n'
-        elif line.strip() == "const inputs;":
+        elif line.strip() == "const inputs = [];":
             ret += generateHTMLCode().replace('\n', '\\\n')
         elif len(line.strip()) > 0:
             ret += line.strip() + '\\\n'
     if update_temp:
-        html = open(os.path.dirname(__file__) + '/../temp.html', 'w+')
+        html = open(os.path.dirname(__file__) + '/../generated.html', 'w+')
         html.truncate(0)
-        html.write(ret.replace('\\', '').replace('%i', '2'))
-    ret = 'char HTMLTemplate[] = "' + ret[:-2].replace('"', '\\"') + '";\n'
-    ret += '#define TEMPLATE_MAX_SIZE ' + str(len(ret) - 22) + "\nchar temp[TEMPLATE_MAX_SIZE];"
+        html.write(ret.replace('\\', '').replace('%i', str(len(data['modes'])-1)))
+    ret = 'char HTMLTemplate[] = "' + ret[:-2].replace('"', '\\"').replace("%i", str(len(data['modes'])-1)) + '";\n'
     return ret
 
 
@@ -180,7 +185,7 @@ if __name__ == '__main__':
         used_names.append(temp_name)
         m['v_name'] = temp_name
         m['enum_name'] = m['name'].upper().replace(' ', '_')
-    fileout.write('\n'.join(data['insert']) + '\n'*2)
+    fileout.write('\n'.join(data['insert']) + '\n' * 2)
     fileout.write(generateStructs())
     fileout.write(generateDataUnion())
     fileout.write('\n//**LEDOptions**\n')

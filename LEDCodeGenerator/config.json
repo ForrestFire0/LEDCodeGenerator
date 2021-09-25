@@ -33,23 +33,27 @@
       "default": ["#ff0000", "#000000", 118]
     },
     {
-      "name": "HSV Rotate",
+      "name": "HSV Pulse",
       "um": [
         "byte Hue Rate",
         "byte Pulse Speed",
-        "byte Pulse Intensity"
+        "byte Pulse Intensity",
+        "bool Sinusoidal Dimming"
       ],
       "im": [
         "float h",
         "byte v",
         "byte other"
       ],
-      "default": [118, 118, 127]
+      "default": [118, 118, 127, true]
     },
     {
       "name": "Solid",
       "um": [
         "CRGB Color"
+      ],
+      "im": [
+        "CRGB oldcolor"
       ],
       "default": [
         "#0f0f0f"
@@ -58,26 +62,25 @@
     {
       "name": "Pulse",
       "um": [
+        "CRGB Color",
         "byte Pulse Speed",
         "byte Pulse Intensity",
-        "CRGB Color"
+        "bool Sinusoidal Dimming"
       ],
       "im": [
         "byte i"
       ],
-      "default": [
-        "118",
-        "127",
-        "#0000ff"
-      ]
+      "default": ["#0000ff", "118", "127", true]
     },
     {
       "name": "Pulse Random",
       "um": [
-        "byte Pulse Speed"
+        "byte Pulse Speed",
+        "bool Sinusoidal Dimming"
       ],
       "default": [
-        "118"
+        "118",
+        true
       ]
     },
     {
@@ -90,7 +93,7 @@
         "Firework* fireworks"
       ],
       "default": [1],
-      "max": [20]
+      "max": [30]
     },
     {
       "name": "Off"

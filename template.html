@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang='en'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
 
 <head>
@@ -38,26 +38,36 @@
             %%%OPTIONS%%%
         </select>
         <div id='s'></div>
+        <i id='fps'></i>
     </center>
 </body>
 <script>
-    var newData = false;
+    let newData = false;
     setInterval(send, 100);
-    const inputs;
+    setInterval(getFPS, 1500);
+    const inputs = [];
     const s = document.getElementsByTagName('select')[0];
     s.selectedIndex = %i;
     document.getElementById('s').innerHTML = inputs[s.options[s.selectedIndex].text][0];
     function change() {
         document.getElementById('s').innerHTML = inputs[s.options[s.selectedIndex].text][0];
-        u();
+        u();}
+    function getFPS() {
+        let xmlHttp = new XMLHttpRequest();
+        xmlHttp.onload = () => {
+            document.getElementById('fps').innerHTML = xmlHttp.responseText + " fps";
+        };
+        xmlHttp.open('GET', '/gt', true);
+        xmlHttp.send(null);
     }
     function u() { newData = true; }
     function send() {
         if (newData) {
-            var xmlHttp = new XMLHttpRequest();
-            params = {};
-            for (i = 0; i < inputs[s.options[s.selectedIndex].text][1]; i++) {
-                params['p' + i] = document.getElementById('' + i).value;
+            let xmlHttp = new XMLHttpRequest();
+            const params = {};
+            for (let i = 0; i < inputs[s.options[s.selectedIndex].text][1]; i++) {
+                if(document.getElementById('' + i).type === 'checkbox'){params['p' + i] = document.getElementById('' + i).checked;}
+                else{params['p' + i] = document.getElementById('' + i).value;}
             }
             xmlHttp.open('GET', '/set?s=' + s.selectedIndex + '&' + new URLSearchParams(params).toString(), true);
             xmlHttp.send(null);

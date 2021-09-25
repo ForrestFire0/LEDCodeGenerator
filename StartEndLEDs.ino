@@ -17,10 +17,11 @@ void startSelected() {
             break;
         case DOT:
             needFlip = true;
+            needUnFlip = true;
             clearLEDs();
             d.d.color = CRGB::Red;
             d.d.speed = 2;
-            d.d.led = 400;
+            d.d.led = 480;
             break;
         case FIREWORKS:
             needFlip = true;
