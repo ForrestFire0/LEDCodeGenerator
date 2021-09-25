@@ -14,15 +14,19 @@
 #define STASSID "umd-iot"
 #define STAPSK  "2kbgxi8svgye"
 #define ENABLE_WIFI
-//#define ENABLE_INTRO
+#define ENABLE_INTRO
 //#define ENABLE_FRAME_WAIT_FOR_KEY
-#define REFRESH_RATE 60 //Change this and animations get fucked.
 //#define TIME_DEBUG
+
+
 #define timeevent(label) {};
+#define start() {};
 #ifdef TIME_DEBUG
 unsigned long start;
 #undef timeevent(label)
+#undef start();
 #define timeevent(label) {Serial.print(label " :"); Serial.println(micros()-start); start = micros();}
+#define start() {start = micros();}
 #endif
 
 
@@ -90,7 +94,7 @@ void setup(void) {
     });
 
     server.on("/gt", []() {
-        server.send(200, F("text/plain"), String(1000000.0  /lastRunTime));
+        server.send(200, F("text/plain"), String(1000000.0  / lastRunTime));
     });
 
     server.onNotFound(handleNotFound);
@@ -111,12 +115,8 @@ void loop(void) {
     }
     while (Serial.available()) Serial.read();
 #endif
+    lastRunTime = micros() - lastRunTime;
     server.handleClient();
-    if (millis() - nextRun > 1000 / REFRESH_RATE) {
-        nextRun += 1000 / REFRESH_RATE;
-        unsigned long start1 = micros();
-        runLEDs();
-        lastRunTime = micros() - start1;
-    }
+    runLEDs();
     yield();
 }

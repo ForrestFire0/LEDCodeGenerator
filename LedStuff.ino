@@ -188,7 +188,8 @@ void runLEDs() {
             leds[ind2] = temp;
         }
     }
-    timeevent("Flip 1");
+//    timeevent("Flip 1");
+    start();
     FastLED.show();
     timeevent("Show");
     if (needUnFlip) {

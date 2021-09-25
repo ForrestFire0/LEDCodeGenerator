@@ -2,6 +2,7 @@
 //Garunteed that after this function is called, the external members will be set
 void startSelected() {
     needFlip = false;
+    needUnFlip = false;
     memset(&d, 0, sizeof(d));
     FastLED.setBrightness(255);
     switch (selected) {
