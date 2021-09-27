@@ -91,6 +91,14 @@
       ],
       "default": [1],
       "max": [20]
+    },{
+      "name":"BrianTest",
+      "um": [
+        "byte Pulse Speed"
+      ],
+      "default": [
+        "118"
+      ]
     },
     {
       "name": "Off"
