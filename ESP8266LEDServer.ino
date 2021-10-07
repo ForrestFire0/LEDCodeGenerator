@@ -6,15 +6,13 @@
 
 /**
     Todo:
-    - General brightness modifier on the app
-    - Instead of setAll do FastLED.showColor
     - make a "custom" with a sort of all included - change all sorts of things based on all sorts of different functions (aka, value set to sin, brightness set to abs, of time variable, with x scaling as well.
 */
 
 #define STASSID "umd-iot"
 #define STAPSK  "2kbgxi8svgye"
 #define ENABLE_WIFI
-#define ENABLE_INTRO
+//#define ENABLE_INTRO
 //#define ENABLE_FRAME_WAIT_FOR_KEY
 //#define TIME_DEBUG
 
@@ -25,7 +23,7 @@
 unsigned long start;
 #undef timeevent(label)
 #undef start();
-#define timeevent(label) {Serial.print(label " :"); Serial.println(micros()-start); start = micros();}
+#define timeevent(label) {Serial.print(label ": "); Serial.println(micros()-start); start = micros();}
 #define start() {start = micros();}
 #endif
 
@@ -44,24 +42,8 @@ void handleRoot() {
     Serial.println(F("Responding and sending"));
 }
 
-void handleNotFound() {
-    String message = F("File Not Found\n\n");
-    message += "URI: ";
-    message += server.uri();
-    message += "\nMethod: ";
-    message += (server.method() == HTTP_GET) ? "GET" : "POST";
-    message += "\nArguments: ";
-    message += server.args();
-    message += "\n";
-    for (uint8_t i = 0; i < server.args(); i++) {
-        message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
-    }
-    server.send(404, F("text/plain"), message);
-}
-
 void setup(void) {
     Serial.begin(115200);
-    Serial.println("Starting program!");
     startSelected();
     startLEDs();
 #ifdef ENABLE_WIFI
@@ -72,14 +54,9 @@ void setup(void) {
         delay(100);
         Serial.print(".");
     }
+    Serial.println("Starting program!");
 #endif
-    Serial.println("");
-    Serial.print(F("Connected to "));
-    Serial.println(ssid);
-    Serial.print(F("Server starting on: "));
-    Serial.print(WiFi.localIP());
     server.on("/", handleRoot);
-
     server.on("/set", []() {
         Mode oldSelected = selected;
         selected = (Mode) server.arg(0).toInt();
@@ -89,24 +66,35 @@ void setup(void) {
             Serial.println(LEDOptions[(byte) selected]);
             startSelected();
         }
+        Serial.println("Set parameters:");
         fillInArgs(selected, server);
-        server.send(200, F("text/plain"), F("Set selected mode"));
+        stringifyParams(selected);
+        Serial.println(spBuffer);
+        server.send(200, F("text/plain"), F("Done!"));
     });
 
     server.on("/gt", []() {
-        server.send(200, F("text/plain"), String(1000000.0  / lastRunTime));
+        sprintf(spBuffer, "%f", 1000000.0  / lastRunTime);
+        server.send(200, F("text/plain"), spBuffer);
     });
 
-    server.onNotFound(handleNotFound);
+    server.on("/gc", []() {
+        stringifyParams(selected);
+        Serial.println(spBuffer);
+        server.send(200, F("text/plain"), spBuffer);
+    });
+
 #ifdef ENABLE_WIFI
     server.begin();
 #endif
-    Serial.println(F("Server started! We are live!"));
+    Serial.print(F("Connected to "));
+    Serial.println(ssid);
+    Serial.print(F("Server starting on: "));
+    Serial.println(WiFi.localIP());
     runInitLEDS();
 }
 
 //Q: Do we want to write a new frame every time this function is called?
-unsigned long nextRun = 0;
 void loop(void) {
 #ifdef ENABLE_FRAME_WAIT_FOR_KEY
     while (!Serial.available()) {
@@ -115,8 +103,10 @@ void loop(void) {
     }
     while (Serial.available()) Serial.read();
 #endif
-    lastRunTime = micros() - lastRunTime;
+    unsigned long s = micros();
     server.handleClient();
     runLEDs();
     yield();
+    while(micros() - s < 10000) yield();
+    lastRunTime = micros() - s;
 }

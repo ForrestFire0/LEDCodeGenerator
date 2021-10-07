@@ -20,15 +20,11 @@ void startLEDs() {
 #endif
 }
 
-void blip() {
-    FastLED.showColor(CRGB::White, 10);
-    delay(100);
-    FastLED.showColor(CRGB::White, 0);
-
-}
 void runInitLEDS() {
     for (int i = 0; i < 5; i++) {
-        blip();
+        FastLED.showColor(CRGB::White, 10);
+        delay(100);
+        FastLED.showColor(CRGB::White, 0);
         server.handleClient();
         delay(50);
     }
@@ -42,10 +38,11 @@ float spdInc(byte speed) {
 
 bool needFlip; //Set to true to flip the second half of the array.
 bool needUnFlip; //Set to true to flip the second half of the array back after writing and restore the state of the LED array.
+bool needWrite;
 float i; //A variable that measures step for all functions. Added to by speed.
 
 void runLEDs() {
-    byte brightness;
+    needWrite = true;
     switch (selected) {
         case RGB_ROTATE: {
                 float inc = spdInc(d.rr.speed);
@@ -75,6 +72,7 @@ void runLEDs() {
         case HSV_PULSE: {
                 fri(i, spdInc(d.hp.pulseSpeed)); //I increments with speed. Rollover increment.
                 fri(d.hp.h, spdInc(d.hp.hueRate)); //I increments with speed. Rollover increment.
+                byte brightness;
                 if (d.hp.sinusoidalDimming)
                     brightness = (float) d.hp.pulseIntensity * (0.5 * sin(0.0245436926 * i) + 0.5) + (255 - d.hp.pulseIntensity);
                 else
@@ -83,8 +81,10 @@ void runLEDs() {
             }
             break;
         case SOLID:
+            needWrite = false;
             if (d.s.color != d.s.oldcolor) {
                 setAll(d.s.color);
+                needWrite = true;
                 d.s.oldcolor = d.s.color;
             }
             break;
@@ -108,9 +108,7 @@ void runLEDs() {
                 FastLED.setBrightness(255 * (i > 30));
             break;
         case FIREWORKS:
-            timeevent("Start");
             clearLEDs();
-            timeevent("Cleared");
             if (d.f.fireworkCount != d.f.oldfc) { //if the number of fireworks has been updated.
                 //Allocate a temporary array. Set it equal to the data
                 //                ps("Reallocating array...");
@@ -143,17 +141,12 @@ void runLEDs() {
                 if (d.f.fireworks[i].maxSpread == 0) {
                     d.f.fireworks[i].lifetime = 1;
                     d.f.fireworks[i].maxSpread = (byte) random(20, 40);
-                    d.f.fireworks[i].location = (unsigned int) random(0, NUM_LEDS);
+                    d.f.fireworks[i].location = (unsigned int) random(NUM_LEDS);
                     d.f.fireworks[i].hue = (byte) random(255);
                 }
+                d.f.fireworks[i].lifetime++; //Second, we need to update said fireworks. Location stays the same, but lifetime should increase.
             }
-            timeevent("Created/deleted");
-            //            ps("Done making fireworks");
-            //Second, we need to update said fireworks. Location stays the same, but lifetime should increase.
-            for (int i = 0; i < d.f.fireworkCount; i++) {
-                d.f.fireworks[i].lifetime++;
-            }
-            timeevent("Lifetime");
+
             //Now, lets animate the fireworks.
             for (int i = 0; i < d.f.fireworkCount; i++) {
                 float sLife = ((float) d.f.fireworks[i].lifetime) / 60.0;
@@ -171,13 +164,109 @@ void runLEDs() {
                         register byte pixBrightness = 255 * (-pow(local_loc / spread, 4) + 1) * brightness;
                         register unsigned int global_loc = d.f.fireworks[i].location + local_loc;
                         leds[getLEDIndex(global_loc)] += CHSV(d.f.fireworks[i].hue + random(-10, 10), 255, pixBrightness);
+                        //^= because there might be overlapping fireworks. It should be brighter.
                     }
-                    //^= because there might be overlapping fireworks. It should be brighter.
+
                 }
             }
-            timeevent("Animated");
+            break;
+        case WAVES: {
+                if (d.w.waveCount != d.w.oldsize) {
+                    byte oldSize = min(d.w.waveCount, d.w.oldsize);
+                    MovingVertex old[oldSize];
+                    for (int i = 0; i < oldSize; i++) {
+                        old[i] = d.w.pts[i];
+                    }
+                    delete[] d.w.pts;
+                    // Create the new array. For the
+                    d.w.pts = new MovingVertex[d.w.waveCount]();
+                    for (int i = 0; i < oldSize; i++) {
+                        d.w.pts[i] = old[i];
+                    }
+                    d.w.oldsize = d.w.waveCount;
+                }
+                //Determine if we need to re-randomize any of them (aka, don't change where they currently are, just where they are going.
+                for (byte i = 0; i < d.w.waveCount; i++) {
+                    if (d.w.pts[i].iloc == 0) {
+                        d.w.pts[i].location = random(NUM_LEDS); //Move to it by
+#define MAX_MOVE 100
+                        d.w.pts[i].finalLocation = d.w.pts[i].location + random(-MAX_MOVE, MAX_MOVE); //Move to it by
+                        if (d.w.pts[i].finalLocation < 0) d.w.pts[i].finalLocation += NUM_LEDS;
+                        d.w.pts[i].currentC = CHSV(random(255), 255, 255); //Soon, select between a list of colors, for now, selected randomly. Maybe option to select randomly? Checkbox
+                        d.w.pts[i].finalC = CHSV(random(255), 255, 255); //Soon, select between a list of colors, for now, selected randomly. Maybe option to select randomly? Checkbox
+                    } else if (d.w.pts[i].iloc == d.w.pts[i].finalLocation) {
+                        d.w.pts[i].finalLocation += random(-MAX_MOVE, MAX_MOVE); //Move to it by
+                        if (d.w.pts[i].finalLocation < 0) d.w.pts[i].finalLocation += NUM_LEDS;
+                        d.w.pts[i].finalC = CHSV(random(255), 255, 255); //Soon, select between a list of colors, for now, selected randomly. Maybe option to select randomly? Checkbox
+                    }
+                }
+                //Increment the location and color.
+                for (byte i = 0; i < d.w.waveCount; i++) {
+                    d.w.pts[i].location += (d.w.pts[i].finalLocation - d.w.pts[i].location) * 0.1;
+                    d.w.pts[i].currentC = d.w.pts[i].currentC.lerp8(d.w.pts[i].finalC, 25);
+                    d.w.pts[i].iloc = (int) (d.w.pts[i].location + 0.5);
+                }
+
+                //Sort those motherf***ers
+                MovingVertex temp;
+                for (byte i = 0; i < d.w.waveCount; i++)
+                {
+                    for (byte j = i + 1; j < d.w.waveCount; j++)
+                    {
+                        if (d.w.pts[i].location == d.w.pts[j].location)
+                            d.w.pts[i].location += 1;
+                        if (d.w.pts[i].location > d.w.pts[j].location)
+                        {
+                            temp = d.w.pts[i];
+                            d.w.pts[i] = d.w.pts[j];
+                            d.w.pts[j] = temp;
+                        }
+                    }
+                }
+
+                if (d.w.waveCount == 0) {
+                    setAll(CRGB::Black);
+                    return;
+                }
+                if (d.w.waveCount == 1)
+                    setAll(d.w.pts[1].currentC);
+                //Nothing every dies, it just moves. We might need to resize the array however, and create new ones.
+                //We need to sort the array by index.
+                MovingVertex back = d.w.pts[d.w.waveCount - 1];
+                MovingVertex front = d.w.pts[0];
+                byte currentFrontIndex = 0;
+                //Now, we need to go through each LED
+                for (int i = 0; i < NUM_LEDS; i++) {
+                    if (i == front.iloc) {
+                        //it is time to advance.
+                        back = front; //Set the back pointer to point at the front
+                        currentFrontIndex++;
+                        if (currentFrontIndex == d.w.waveCount)
+                            front = d.w.pts[0];
+                        else
+                            front = d.w.pts[currentFrontIndex];
+                        leds[i] = back.currentC;
+                    } else {
+                        //Now, lets find the color by linearly interpolating front the back to the front.
+                        //i will not equal front location, however it will equal back location often.
+                        register byte frac;
+                        if (front.iloc > back.iloc)
+                            frac = ((i - back.iloc) * 256) / (front.iloc - back.iloc);
+                        else {
+                            if (i >= back.iloc)
+                                frac = ((i - back.iloc) * 256) / (int)(front.iloc - back.iloc + NUM_LEDS);
+                            else
+                                frac = ((i - back.iloc + NUM_LEDS) * 256) / (int)(front.iloc - back.iloc + NUM_LEDS);
+                        }
+                        leds[i] = back.currentC.lerp8(front.currentC, frac);
+                    }
+                }
+            } break;
+        case OFF:
+            needWrite = false;
             break;
     }
+    if (!needWrite) return;
     if (needFlip) {
         //                    (      658                )
         for (int i = 450; i < (NUM_LEDS - 450) / 2 + 450; i++) {
@@ -188,10 +277,8 @@ void runLEDs() {
             leds[ind2] = temp;
         }
     }
-//    timeevent("Flip 1");
-    start();
+
     FastLED.show();
-    timeevent("Show");
     if (needUnFlip) {
         for (int i = 450; i < (NUM_LEDS - 450) / 2 + 450; i++) {
             register unsigned int ind1 = i;

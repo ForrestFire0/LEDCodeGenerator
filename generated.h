@@ -1,5 +1,5 @@
 struct Firework {int location; byte maxSpread; int lifetime; byte hue;};
-
+struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};
 #define pt(x) {Serial.print(#x ": "); Serial.println(x);}
 #define ps(x) Serial.println(F(x));
 #define pfire(x) {Serial.print(F("Firework {")); Serial.print(x.location); Serial.print(", "); Serial.print(x.maxSpread); Serial.print(", "); Serial.print(x.lifetime); Serial.print(", "); Serial.print(x.hue); Serial.println("}");};
@@ -26,8 +26,8 @@ struct DotData {
 struct HSVPulseData {
      byte hueRate;
      byte pulseSpeed;
-     byte pulseIntensity;
      bool sinusoidalDimming;
+     byte pulseIntensity;
      float h;
      byte v;
      byte other;
@@ -41,8 +41,8 @@ struct SolidData {
 struct PulseData {
      CRGB color;
      byte pulseSpeed;
-     byte pulseIntensity;
      bool sinusoidalDimming;
+     byte pulseIntensity;
      byte i;
 };
 
@@ -57,7 +57,13 @@ struct FireworksData {
      Firework* fireworks;
 };
 
-struct OffData {
+struct WavesData {
+     byte waveCount;
+     boolean random;
+     byte colorsLength;
+     CRGB *colors;
+     MovingVertex *pts;
+     byte oldsize;
 };
 
 union Data {
@@ -69,144 +75,242 @@ union Data {
      PulseData p;
      PulseRandomData pr;
      FireworksData f;
-     OffData o;
+     WavesData w;
 } d;
 
 
 //**LEDOptions**
-char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Off"};
-enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, OFF};
+char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Waves", "Off"};
+enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, WAVES, OFF};
 
 //**SETTERS CODE**
 void fillInArgs(Mode selected, ESP8266WebServer &server) {
     char buff[7];
+    char nameBuff[4];
     switch (selected) {
-     case RGB_ROTATE:
-        d.rr.speed = (byte) server.arg(1).toInt();
+    case RGB_ROTATE:
+        d.rr.speed = (byte) server.arg("p0").toInt();
         break;
-     case RANDOM:
-        d.r.speed = (byte) server.arg(1).toInt();
+    case RANDOM:
+        d.r.speed = (byte) server.arg("p0").toInt();
         break;
-     case DOT:
-        server.arg(1).substring(1).toCharArray(buff, 7);
+    case DOT:
+        server.arg("p0").substring(1).toCharArray(buff, 7);
         d.d.color = CRGB(strtoul(buff, NULL, 16));
-        server.arg(2).substring(1).toCharArray(buff, 7);
+        server.arg("p1").substring(1).toCharArray(buff, 7);
         d.d.secondaryColor = CRGB(strtoul(buff, NULL, 16));
-        d.d.speed = (byte) server.arg(3).toInt();
+        d.d.speed = (byte) server.arg("p2").toInt();
         break;
-     case HSV_PULSE:
-        d.hp.hueRate = (byte) server.arg(1).toInt();
-        d.hp.pulseSpeed = (byte) server.arg(2).toInt();
-        d.hp.pulseIntensity = (byte) server.arg(3).toInt();
-        d.hp.sinusoidalDimming = server.arg(4).equals("true");
+    case HSV_PULSE:
+        d.hp.hueRate = (byte) server.arg("p0").toInt();
+        d.hp.pulseSpeed = (byte) server.arg("p1").toInt();
+        d.hp.sinusoidalDimming = server.arg("p2").equals("true");
+        d.hp.pulseIntensity = (byte) server.arg("p3").toInt();
         break;
-     case SOLID:
-        server.arg(1).substring(1).toCharArray(buff, 7);
+    case SOLID:
+        server.arg("p0").substring(1).toCharArray(buff, 7);
         d.s.color = CRGB(strtoul(buff, NULL, 16));
         break;
-     case PULSE:
-        server.arg(1).substring(1).toCharArray(buff, 7);
+    case PULSE:
+        server.arg("p0").substring(1).toCharArray(buff, 7);
         d.p.color = CRGB(strtoul(buff, NULL, 16));
-        d.p.pulseSpeed = (byte) server.arg(2).toInt();
-        d.p.pulseIntensity = (byte) server.arg(3).toInt();
-        d.p.sinusoidalDimming = server.arg(4).equals("true");
+        d.p.pulseSpeed = (byte) server.arg("p1").toInt();
+        d.p.sinusoidalDimming = server.arg("p2").equals("true");
+        d.p.pulseIntensity = (byte) server.arg("p3").toInt();
         break;
-     case PULSE_RANDOM:
-        d.pr.pulseSpeed = (byte) server.arg(1).toInt();
-        d.pr.sinusoidalDimming = server.arg(2).equals("true");
+    case PULSE_RANDOM:
+        d.pr.pulseSpeed = (byte) server.arg("p0").toInt();
+        d.pr.sinusoidalDimming = server.arg("p1").equals("true");
         break;
-     case FIREWORKS:
-        d.f.fireworkCount = (byte) server.arg(1).toInt();
+    case FIREWORKS:
+        d.f.fireworkCount = (byte) server.arg("p0").toInt();
         break;
-     case OFF:
+    case WAVES:
+        d.w.waveCount = (byte) server.arg("p0").toInt();
+        d.w.random = server.arg("p1").equals("true");
+        d.w.colorsLength = (byte) server.arg("p2").toInt();
+        delete[] d.w.colors;
+        d.w.colors = new CRGB[d.w.colorsLength]();
+        for(byte i = 0; i < d.w.colorsLength; i++) { 
+            sprintf(nameBuff, "4s%d", i);
+            server.arg(nameBuff).substring(1).toCharArray(buff, 7);
+            d.w.colors[i] = CRGB(strtoul(buff, NULL, 16));
+        }
         break;
      }
 }
 
 
-
-
 //**HTML STRING**
-char HTMLTemplate[] = "<!DOCTYPE html>\
-<html lang='en'>\
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>\
-<head>\
-<title>LED Controller</title>\
-<link href='https://fonts.googleapis.com/css2?family=Comfortaa&display=swap' rel='stylesheet'>\
-<style>\
-body {\
-font-family: 'Comfortaa', cursive;\
-background-color: #cccccc;\
-Color: #000088;\
-}\
-h1 {\
-font-size: 10vw;\
-margin-top: 1vw;\
-margin-bottom: 1vw;\
-}\
-h3 {\
-font-size: 6vw;\
-margin-bottom: 1vw;\
-}\
-select {\
-width: min(75vw, 600px);\
-font-size: min(6vw, 30px);\
-}\
-</style>\
-</head>\
-<body>\
-<h3><i>Forrest and Brian's</i></h3>\
-<h1>LED Controller</h1>\
-<center>\
-<select onchange='change()'>\
-<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Off</option>\
-</select>\
-<div style='margin-bottom: 3vh' id='s'></div>\
-<i style='font-size: x-large;' id='fps'></i>\
-</center>\
-</body>\
-<script>\
-let newData = false;\
-setInterval(send, 100);\
-setInterval(getFPS, 1500);\
-const inputs = {\
-     'RGB Rotate': ['Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u()\"><br>',1],\
-     'Random': ['Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"100\" oninput=\"u()\"><br>',1],\
-     'Dot': ['Color: <input type=\"color\" id=\"0\" value=\"#ff0000\" oninput=\"u()\"><br>Secondary Color: <input type=\"color\" id=\"1\" value=\"#000000\" oninput=\"u()\"><br>Speed: <input type=\"range\" id=\"2\" max=\"255\" value=\"118\" oninput=\"u()\"><br>',3],\
-     'HSV Pulse': ['Hue Rate: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u()\"><br>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u()\"><br>Pulse Intensity: <input type=\"range\" id=\"2\" max=\"255\" value=\"127\" oninput=\"u()\"><br>Sinusoidal Dimming: <input type=\"checkbox\" id=\"3\"checked oninput=\"u()\"><br>',4],\
-     'Solid': ['Color: <input type=\"color\" id=\"0\" value=\"#0f0f0f\" oninput=\"u()\"><br>',1],\
-     'Pulse': ['Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u()\"><br>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u()\"><br>Pulse Intensity: <input type=\"range\" id=\"2\" max=\"255\" value=\"127\" oninput=\"u()\"><br>Sinusoidal Dimming: <input type=\"checkbox\" id=\"3\"checked oninput=\"u()\"><br>',4],\
-     'Pulse Random': ['Pulse Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u()\"><br>Sinusoidal Dimming: <input type=\"checkbox\" id=\"1\"checked oninput=\"u()\"><br>',2],\
-     'Fireworks': ['Firework Count: <input type=\"range\" id=\"0\" max=\"30\" value=\"1\" oninput=\"u()\"><br>',1],\
-     'Off': ['',0],\
-};\
-const s = document.getElementsByTagName('select')[0];\
-s.selectedIndex = 8;\
-document.getElementById('s').innerHTML = inputs[s.options[s.selectedIndex].text][0];\
-function change() {\
-document.getElementById('s').innerHTML = inputs[s.options[s.selectedIndex].text][0];\
-u();}\
-function getFPS() {\
-let xmlHttp = new XMLHttpRequest();\
-xmlHttp.onload = () => {\
-document.getElementById('fps').innerHTML = xmlHttp.responseText + \" fps\";\
-};\
-xmlHttp.open('GET', '/gt', true);\
-xmlHttp.send(null);\
-}\
-function u() { newData = true; }\
-function send() {\
-if (newData) {\
-let xmlHttp = new XMLHttpRequest();\
-const params = {};\
-for (let i = 0; i < inputs[s.options[s.selectedIndex].text][1]; i++) {\
-if(document.getElementById('' + i).type === 'checkbox'){params['p' + i] = document.getElementById('' + i).checked;}\
-else{params['p' + i] = document.getElementById('' + i).value;}\
-}\
-xmlHttp.open('GET', '/set?s=' + s.selectedIndex + '&' + new URLSearchParams(params).toString(), true);\
-xmlHttp.send(null);\
-newData = false;\
-}\
-}\
-</script>\
-</html>";
+char HTMLTemplate[] = "<!DOCTYPE html>\n\
+<html lang='en'>\n\
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>\n\
+<head>\n\
+<title>LED Controller</title>\n\
+<link href='https://fonts.googleapis.com/css2?family=Comfortaa&display=swap' rel='stylesheet'>\n\
+<style>\n\
+body {\n\
+font-family: 'Comfortaa', cursive;\n\
+background-color: #cccccc;\n\
+Color: #000088;\n\
+}\n\
+h1 {\n\
+font-size: 10vw;\n\
+margin-top: 1vw;\n\
+margin-bottom: 1vw;\n\
+}\n\
+h3 {\n\
+font-size: 6vw;\n\
+margin-bottom: 1vw;\n\
+}\n\
+select {\n\
+width: min(75vw, 600px);\n\
+font-size: min(6vw, 30px);\n\
+}\n\
+</style>\n\
+</head>\n\
+<body>\n\
+<h3><i>Forrest and Brian's</i></h3>\n\
+<h1>LED Controller</h1>\n\
+<center>\n\
+<h2 id=\"loading\">LOADING...</h2>\n\
+<label>\n\
+<select onchange='change()'>\n\
+<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Off</option>\
+</select>\n\
+</label>\n\
+<div style='margin-bottom: 3vh' id='s'></div>\n\
+<i style='font-size: x-large;' id='fps'></i>\n\
+</center>\n\
+</body>\n\
+<script>\n\
+let newData = false;\n\
+const vlas = {};\n\
+setInterval(send, 200);\n\
+setInterval(getFPS, 2000);\n\
+const inputs = {\n\
+                'RGB Rotate': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div>',1],\n\
+                'Random': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"100\" oninput=\"u();\"></div>',1],\n\
+                'Dot': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#ff0000\" oninput=\"u();\"></div><div>Secondary Color: <input type=\"color\" id=\"1\" value=\"#000000\" oninput=\"u();\"></div><div>Speed: <input type=\"range\" id=\"2\" max=\"255\" value=\"118\" oninput=\"u();\"></div>',3],\n\
+                'HSV Pulse': ['<div>Hue Rate: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'N3\\\']);u();\"></div><div>Pulse Intensity: <input type=\"range\" id=\"3\" max=\"255\" value=\"172\" oninput=\"u();\"></div>',4,()=>{cIF(2,['N3']);}],\n\
+                'Solid': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0f0f0f\" oninput=\"u();\"></div>',1],\n\
+                'Pulse': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'N3\\\']);u();\"></div><div>Pulse Intensity: <input type=\"range\" id=\"3\" max=\"255\" value=\"127\" oninput=\"u();\"></div>',4,()=>{cIF(2,['N3']);}],\n\
+                'Pulse Random': ['<div>Pulse Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"1\" checked oninput=\"u();\"></div>',2],\n\
+                'Fireworks': ['<div>Firework Count: <input type=\"range\" id=\"0\" max=\"30\" value=\"1\" oninput=\"u();\"></div>',1],\n\
+                'Waves': ['<div>Wave Count: <input type=\"range\" id=\"0\" max=\"10\" value=\"3\" oninput=\"u();\"></div><div>Random: <input type=\"checkbox\" id=\"1\" checked oninput=\"cIF(1,[\\\'!2\\\',\\\'!3\\\']);u();\"></div><div>Colors Length: <input type=\"range\" id=\"2\" max=\"10\" value=\"2\" oninput=\"cVLA(2,3);u();\"></div><div id=\"3\"></div>',4,()=>{cIF(1,['!2','!3']);cVLA(2,3);}],\n\
+                'Off': ['',0],\n\
+};\n\
+vlas['3'] = 'color';\n\
+const s = document.getElementsByTagName('select')[0];\n\
+const cont = document.getElementById('s');\n\
+function change() {\n\
+const index = inputs[s.options[s.selectedIndex].text];\n\
+cont.innerHTML = index[0];\n\
+if(index.length > 2) index[2]();\n\
+u();}\n\
+function cVLA(itsID, divID) {\n\
+const slider = document.getElementById(itsID);\n\
+const div = document.getElementById(divID);\n\
+const oldLen = div.children.length;\n\
+const newLen = parseInt(slider.value);\n\
+if (oldLen < newLen)\n\
+for (let i = oldLen; i < newLen; i++) {\n\
+div.innerHTML += '<input type=\"' + vlas['' + divID] + '\" oninput=\"u()\">';\n\
+}\n\
+else while (div.children.length > newLen) {\n\
+div.removeChild(div.lastChild);\n\
+}\n\
+}\n\
+function cIF(itsID, hidesID) {\n\
+const checked = document.getElementById(itsID).checked;\n\
+for(let hide of hidesID) {\n\
+let ch = checked;\n\
+if(hide.substr(0,1)==='!') ch = !ch;\n\
+let e = document.getElementById(hide.substr(1));\n\
+while(e.tagName !== \"DIV\") e = e.parentElement;\n\
+e.style.display = ch ? \"block\" : \"none\";\n\
+}\n\
+}\n\
+function request(url, onload) {\n\
+let xhr = new XMLHttpRequest();\n\
+xhr.onload = () => onload(xhr.responseText);\n\
+xhr.open('GET', url, true);\n\
+xhr.send(null);\n\
+}\n\
+function getFPS() {\n\
+request('/gt', (res) => {\n\
+document.getElementById('fps').innerHTML = parseFloat(res).toFixed(2) + \" fps\";\n\
+});\n\
+}\n\
+request('/gc', (res) => {\n\
+const a = res.split(\"\|\");\n\
+s.selectedIndex = parseInt(a[0]);\n\
+cont.innerHTML = inputs[s.options[s.selectedIndex].text][0];\n\
+for (let i = 0; i < inputs[s.options[s.selectedIndex].text][1]; i++) {\n\
+if (document.getElementById('' + i).type === 'checkbox') {\n\
+document.getElementById('' + i).checked = (a[i + 1] === \"1\");\n\
+} else {\n\
+document.getElementById('' + i).value = a[i + 1];\n\
+}\n\
+}\n\
+})\n\
+function u() { newData = true; }\n\
+function send() {\n\
+if (newData) {\n\
+let xmlHttp = new XMLHttpRequest();\n\
+const params = {};\n\
+for (let i = 0; i < inputs[s.options[s.selectedIndex].text][1]; i++) {\n\
+const e = document.getElementById('' + i);\n\
+if(e.type === 'checkbox'){params['p' + i] = e.checked;}\n\
+else if (e.tagName === 'DIV') {\n\
+for (let j = 0; j < e.children.length; j++) {\n\
+params[i + 's' + j] = e.children[j].value;\n\
+}\n\
+}\n\
+else{params['p' + i] = e.value;}\n\
+}\n\
+xmlHttp.open('GET', '/set?s=' + s.selectedIndex + '&' + new URLSearchParams(params).toString(), true);\n\
+xmlHttp.send(null);\n\
+newData = false;\n\
+}\n\
+}\n\
+</script>\n\
+</html>\n";
+
+//**STRINGIFY PARAMS**
+char spBuffer[31];
+void stringifyParams(Mode selected) {
+    switch (selected) {
+    case RGB_ROTATE:
+        sprintf(spBuffer, "%i|%i", selected, d.rr.speed);
+        break;
+    case RANDOM:
+        sprintf(spBuffer, "%i|%i", selected, d.r.speed);
+        break;
+    case DOT:
+        sprintf(spBuffer, "%i|#%02X%02X%02X|#%02X%02X%02X|%i", selected, d.d.color.r, d.d.color.g, d.d.color.b, d.d.secondaryColor.r, d.d.secondaryColor.g, d.d.secondaryColor.b, d.d.speed);
+        break;
+    case HSV_PULSE:
+        sprintf(spBuffer, "%i|%i|%i|%i|%i", selected, d.hp.hueRate, d.hp.pulseSpeed, d.hp.sinusoidalDimming, d.hp.pulseIntensity);
+        break;
+    case SOLID:
+        sprintf(spBuffer, "%i|#%02X%02X%02X", selected, d.s.color.r, d.s.color.g, d.s.color.b);
+        break;
+    case PULSE:
+        sprintf(spBuffer, "%i|#%02X%02X%02X|%i|%i|%i", selected, d.p.color.r, d.p.color.g, d.p.color.b, d.p.pulseSpeed, d.p.sinusoidalDimming, d.p.pulseIntensity);
+        break;
+    case PULSE_RANDOM:
+        sprintf(spBuffer, "%i|%i|%i", selected, d.pr.pulseSpeed, d.pr.sinusoidalDimming);
+        break;
+    case FIREWORKS:
+        sprintf(spBuffer, "%i|%i", selected, d.f.fireworkCount);
+        break;
+    case WAVES:
+        sprintf(spBuffer, "%i|%i|%i|%i|", selected, d.w.waveCount, d.w.random, d.w.colorsLength);
+        break;
+    case OFF:
+        sprintf(spBuffer, "%i", selected);
+        break;
+    }
+}
+

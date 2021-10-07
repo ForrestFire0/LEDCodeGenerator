@@ -27,8 +27,14 @@ void startSelected() {
         case FIREWORKS:
             needFlip = true;
             d.f.fireworks = new Firework[0]();
+            break;
         case OFF:
             clearLEDs();
+            FastLED.show();
+            break;
+        case WAVES:
+            d.w.pts = new MovingVertex[0]();
+            d.w.colors = new CRGB[2]();
             break;
     }
 }
@@ -37,6 +43,10 @@ void endSelected(Mode oldselected) {
     switch (oldselected) {
         case FIREWORKS:
             delete[] d.f.fireworks;
+            break;
+        case WAVES:
+            delete[] d.w.pts;
+            delete[] d.w.colors;
             break;
     }
 }

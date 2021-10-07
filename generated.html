@@ -29,50 +29,101 @@ font-size: min(6vw, 30px);
 <h3><i>Forrest and Brian's</i></h3>
 <h1>LED Controller</h1>
 <center>
+<h2 id="loading">LOADING...</h2>
+<label>
 <select onchange='change()'>
-<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Off</option>
+<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Off</option>\
 </select>
+</label>
 <div style='margin-bottom: 3vh' id='s'></div>
 <i style='font-size: x-large;' id='fps'></i>
 </center>
 </body>
 <script>
 let newData = false;
-setInterval(send, 100);
-setInterval(getFPS, 1500);
+const vlas = {};
+setInterval(send, 200);
+setInterval(getFPS, 2000);
 const inputs = {
-     'RGB Rotate': ['Speed: <input type="range" id="0" max="255" value="118" oninput="u()"><br>',1],
-     'Random': ['Speed: <input type="range" id="0" max="255" value="100" oninput="u()"><br>',1],
-     'Dot': ['Color: <input type="color" id="0" value="#ff0000" oninput="u()"><br>Secondary Color: <input type="color" id="1" value="#000000" oninput="u()"><br>Speed: <input type="range" id="2" max="255" value="118" oninput="u()"><br>',3],
-     'HSV Pulse': ['Hue Rate: <input type="range" id="0" max="255" value="118" oninput="u()"><br>Pulse Speed: <input type="range" id="1" max="255" value="118" oninput="u()"><br>Pulse Intensity: <input type="range" id="2" max="255" value="127" oninput="u()"><br>Sinusoidal Dimming: <input type="checkbox" id="3"checked oninput="u()"><br>',4],
-     'Solid': ['Color: <input type="color" id="0" value="#0f0f0f" oninput="u()"><br>',1],
-     'Pulse': ['Color: <input type="color" id="0" value="#0000ff" oninput="u()"><br>Pulse Speed: <input type="range" id="1" max="255" value="118" oninput="u()"><br>Pulse Intensity: <input type="range" id="2" max="255" value="127" oninput="u()"><br>Sinusoidal Dimming: <input type="checkbox" id="3"checked oninput="u()"><br>',4],
-     'Pulse Random': ['Pulse Speed: <input type="range" id="0" max="255" value="118" oninput="u()"><br>Sinusoidal Dimming: <input type="checkbox" id="1"checked oninput="u()"><br>',2],
-     'Fireworks': ['Firework Count: <input type="range" id="0" max="30" value="1" oninput="u()"><br>',1],
-     'Off': ['',0],
+                'RGB Rotate': ['<div>Speed: <input type="range" id="0" max="255" value="118" oninput="u();"></div>',1],
+                'Random': ['<div>Speed: <input type="range" id="0" max="255" value="100" oninput="u();"></div>',1],
+                'Dot': ['<div>Color: <input type="color" id="0" value="#ff0000" oninput="u();"></div><div>Secondary Color: <input type="color" id="1" value="#000000" oninput="u();"></div><div>Speed: <input type="range" id="2" max="255" value="118" oninput="u();"></div>',3],
+                'HSV Pulse': ['<div>Hue Rate: <input type="range" id="0" max="255" value="118" oninput="u();"></div><div>Pulse Speed: <input type="range" id="1" max="255" value="118" oninput="u();"></div><div>Sinusoidal Dimming: <input type="checkbox" id="2" checked oninput="cIF(2,[\'N3\']);u();"></div><div>Pulse Intensity: <input type="range" id="3" max="255" value="172" oninput="u();"></div>',4,()=>{cIF(2,['N3']);}],
+                'Solid': ['<div>Color: <input type="color" id="0" value="#0f0f0f" oninput="u();"></div>',1],
+                'Pulse': ['<div>Color: <input type="color" id="0" value="#0000ff" oninput="u();"></div><div>Pulse Speed: <input type="range" id="1" max="255" value="118" oninput="u();"></div><div>Sinusoidal Dimming: <input type="checkbox" id="2" checked oninput="cIF(2,[\'N3\']);u();"></div><div>Pulse Intensity: <input type="range" id="3" max="255" value="127" oninput="u();"></div>',4,()=>{cIF(2,['N3']);}],
+                'Pulse Random': ['<div>Pulse Speed: <input type="range" id="0" max="255" value="118" oninput="u();"></div><div>Sinusoidal Dimming: <input type="checkbox" id="1" checked oninput="u();"></div>',2],
+                'Fireworks': ['<div>Firework Count: <input type="range" id="0" max="30" value="1" oninput="u();"></div>',1],
+                'Waves': ['<div>Wave Count: <input type="range" id="0" max="10" value="3" oninput="u();"></div><div>Random: <input type="checkbox" id="1" checked oninput="cIF(1,[\'!2\',\'!3\']);u();"></div><div>Colors Length: <input type="range" id="2" max="10" value="2" oninput="cVLA(2,3);u();"></div><div id="3"></div>',4,()=>{cIF(1,['!2','!3']);cVLA(2,3);}],
+                'Off': ['',0],
 };
+vlas['3'] = 'color';
 const s = document.getElementsByTagName('select')[0];
-s.selectedIndex = 8;
-document.getElementById('s').innerHTML = inputs[s.options[s.selectedIndex].text][0];
+const cont = document.getElementById('s');
 function change() {
-document.getElementById('s').innerHTML = inputs[s.options[s.selectedIndex].text][0];
+const index = inputs[s.options[s.selectedIndex].text];
+cont.innerHTML = index[0];
+if(index.length > 2) index[2]();
 u();}
-function getFPS() {
-let xmlHttp = new XMLHttpRequest();
-xmlHttp.onload = () => {
-document.getElementById('fps').innerHTML = xmlHttp.responseText + " fps";
-};
-xmlHttp.open('GET', '/gt', true);
-xmlHttp.send(null);
+function cVLA(itsID, divID) {
+const slider = document.getElementById(itsID);
+const div = document.getElementById(divID);
+const oldLen = div.children.length;
+const newLen = parseInt(slider.value);
+if (oldLen < newLen)
+for (let i = oldLen; i < newLen; i++) {
+div.innerHTML += '<input type="' + vlas['' + divID] + '" oninput="u()">';
 }
+else while (div.children.length > newLen) {
+div.removeChild(div.lastChild);
+}
+}
+function cIF(itsID, hidesID) {
+const checked = document.getElementById(itsID).checked;
+for(let hide of hidesID) {
+let ch = checked;
+if(hide.substr(0,1)==='!') ch = !ch;
+let e = document.getElementById(hide.substr(1));
+while(e.tagName !== "DIV") e = e.parentElement;
+e.style.display = ch ? "block" : "none";
+}
+}
+function request(url, onload) {
+let xhr = new XMLHttpRequest();
+xhr.onload = () => onload(xhr.responseText);
+xhr.open('GET', url, true);
+xhr.send(null);
+}
+function getFPS() {
+request('/gt', (res) => {
+document.getElementById('fps').innerHTML = parseFloat(res).toFixed(2) + " fps";
+});
+}
+request('/gc', (res) => {
+const a = res.split("\|");
+s.selectedIndex = parseInt(a[0]);
+cont.innerHTML = inputs[s.options[s.selectedIndex].text][0];
+for (let i = 0; i < inputs[s.options[s.selectedIndex].text][1]; i++) {
+if (document.getElementById('' + i).type === 'checkbox') {
+document.getElementById('' + i).checked = (a[i + 1] === "1");
+} else {
+document.getElementById('' + i).value = a[i + 1];
+}
+}
+})
 function u() { newData = true; }
 function send() {
 if (newData) {
 let xmlHttp = new XMLHttpRequest();
 const params = {};
 for (let i = 0; i < inputs[s.options[s.selectedIndex].text][1]; i++) {
-if(document.getElementById('' + i).type === 'checkbox'){params['p' + i] = document.getElementById('' + i).checked;}
-else{params['p' + i] = document.getElementById('' + i).value;}
+const e = document.getElementById('' + i);
+if(e.type === 'checkbox'){params['p' + i] = e.checked;}
+else if (e.tagName === 'DIV') {
+for (let j = 0; j < e.children.length; j++) {
+params[i + 's' + j] = e.children[j].value;
+}
+}
+else{params['p' + i] = e.value;}
 }
 xmlHttp.open('GET', '/set?s=' + s.selectedIndex + '&' + new URLSearchParams(params).toString(), true);
 xmlHttp.send(null);

@@ -37,15 +37,15 @@
       "um": [
         "byte Hue Rate",
         "byte Pulse Speed",
-        "byte Pulse Intensity",
-        "bool Sinusoidal Dimming"
+        "bool Sinusoidal Dimming",
+        ["byte Pulse Intensity", {"if": "2"}]
       ],
       "im": [
         "float h",
         "byte v",
         "byte other"
       ],
-      "default": [118, 118, 127, true]
+      "default": [118, 118, true, 172]
     },
     {
       "name": "Solid",
@@ -64,13 +64,13 @@
       "um": [
         "CRGB Color",
         "byte Pulse Speed",
-        "byte Pulse Intensity",
-        "bool Sinusoidal Dimming"
+        "bool Sinusoidal Dimming",
+        ["byte Pulse Intensity", {"if": "2"}]
       ],
       "im": [
         "byte i"
       ],
-      "default": ["#0000ff", "118", "127", true]
+      "default": ["#0000ff", "118", true, "127"]
     },
     {
       "name": "Pulse Random",
@@ -93,14 +93,29 @@
         "Firework* fireworks"
       ],
       "default": [1],
-      "max": [30]
+      "max": {"0": 30}
+    },
+    {
+      "name": "Waves",
+      "um": [
+        "byte Wave Count",
+        "boolean Random",
+        ["CRGB *Colors", {"if": "!1", "VLA": {"index": "create", "max": 10, "default": 2}}]
+      ],
+      "im": [
+        "MovingVertex *pts",
+        "byte oldsize"
+      ],
+      "default": [3, true],
+      "max": {"0": 10}
     },
     {
       "name": "Off"
     }
   ],
   "insert": [
-    "struct Firework {int location; byte maxSpread; int lifetime; byte hue;};\n",
+    "struct Firework {int location; byte maxSpread; int lifetime; byte hue;};",
+    "struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};",
     "#define pt(x) {Serial.print(#x \": \"); Serial.println(x);}",
     "#define ps(x) Serial.println(F(x));",
     "#define pfire(x) {Serial.print(F(\"Firework {\")); Serial.print(x.location); Serial.print(\", \"); Serial.print(x.maxSpread); Serial.print(\", \"); Serial.print(x.lifetime); Serial.print(\", \"); Serial.print(x.hue); Serial.println(\"}\");};"
