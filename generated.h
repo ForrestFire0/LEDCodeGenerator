@@ -253,6 +253,7 @@ document.getElementById('' + i).checked = (a[i + 1] === \"1\");\n\
 document.getElementById('' + i).value = a[i + 1];\n\
 }\n\
 }\n\
+document.getElementById('loading').remove();\n\
 })\n\
 function u() { newData = true; }\n\
 function send() {\n\
