@@ -53,10 +53,10 @@ const inputs = {
                 'Pulse': ['<div>Color: <input type="color" id="0" value="#0000ff" oninput="u();"></div><div>Pulse Speed: <input type="range" id="1" max="255" value="118" oninput="u();"></div><div>Sinusoidal Dimming: <input type="checkbox" id="2" checked oninput="cIF(2,[\'N3\']);u();"></div><div>Pulse Intensity: <input type="range" id="3" max="255" value="127" oninput="u();"></div>',4,()=>{cIF(2,['N3']);}],
                 'Pulse Random': ['<div>Pulse Speed: <input type="range" id="0" max="255" value="118" oninput="u();"></div><div>Sinusoidal Dimming: <input type="checkbox" id="1" checked oninput="u();"></div>',2],
                 'Fireworks': ['<div>Firework Count: <input type="range" id="0" max="30" value="1" oninput="u();"></div>',1],
-                'Waves': ['<div>Wave Count: <input type="range" id="0" max="10" value="3" oninput="u();"></div><div>Random: <input type="checkbox" id="1" checked oninput="cIF(1,[\'!2\',\'!3\']);u();"></div><div>Colors Length: <input type="range" id="2" max="10" value="2" oninput="cVLA(2,3);u();"></div><div id="3"></div>',4,()=>{cIF(1,['!2','!3']);cVLA(2,3);}],
+                'Waves': ['<div>Speed: <input type="range" id="0" max="255" value="118" oninput="u();"></div><div>Wave Count: <input type="range" id="1" max="10" value="1" oninput="u();"></div><div>Random: <input type="checkbox" id="2" checked oninput="cIF(2,[\'!3\',\'!4\']);u();"></div><div>Colors Length: <input type="range" id="3" max="10" value="2" oninput="cVLA(3,4);u();"></div><div id="4"></div>',5,()=>{cIF(2,['!3','!4']);cVLA(3,4);}],
                 'Off': ['',0],
 };
-vlas['3'] = 'color';
+vlas['4'] = 'color';
 const s = document.getElementsByTagName('select')[0];
 const cont = document.getElementById('s');
 function change() {

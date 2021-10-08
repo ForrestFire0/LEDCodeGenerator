@@ -20,9 +20,6 @@ void startSelected() {
             needFlip = true;
             needUnFlip = true;
             clearLEDs();
-            d.d.color = CRGB::Red;
-            d.d.speed = 2;
-            d.d.led = 480;
             break;
         case FIREWORKS:
             needFlip = true;
@@ -33,6 +30,7 @@ void startSelected() {
             FastLED.show();
             break;
         case WAVES:
+            needFlip = true;
             d.w.pts = new MovingVertex[0]();
             d.w.colors = new CRGB[2]();
             break;

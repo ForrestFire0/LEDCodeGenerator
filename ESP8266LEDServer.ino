@@ -12,7 +12,6 @@
 #define STASSID "umd-iot"
 #define STAPSK  "2kbgxi8svgye"
 #define ENABLE_WIFI
-//#define ENABLE_INTRO
 //#define ENABLE_FRAME_WAIT_FOR_KEY
 //#define TIME_DEBUG
 
@@ -44,17 +43,13 @@ void handleRoot() {
 
 void setup(void) {
     Serial.begin(115200);
+    Serial.println("Starting program!");
     startSelected();
-    startLEDs();
 #ifdef ENABLE_WIFI
-    WiFi.mode(WIFI_STA);
+//    WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     //Wait for connection
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(100);
-        Serial.print(".");
-    }
-    Serial.println("Starting program!");
+    startLEDs();
 #endif
     server.on("/", handleRoot);
     server.on("/set", []() {
@@ -107,6 +102,6 @@ void loop(void) {
     server.handleClient();
     runLEDs();
     yield();
-    while(micros() - s < 10000) yield();
+    while (micros() - s < 10000) yield();
     lastRunTime = micros() - s;
 }

@@ -4,16 +4,17 @@
 CRGB leds[NUM_LEDS];
 #define fr(f) {if(f >= 256) f-=256;};
 #define fri(f, i) {f+=i;if(f >= 256) f-=256;};
-#define prgb(c) {Serial.print("{"); Serial.print(c.r); Serial.print(","); Serial.print(c.g); Serial.print(","); Serial.print(c.b); Serial.print("}");};
 
 void startLEDs() {
     //pins 12, 13, 14 and 15 (or pins 6,7,5 and 8 on the NodeMCU boards/pin layout).
     FastLED.addLeds<WS2812B_PORTA, NUM_STRIPS>(leds, NUM_LEDS_PER_STRIP);
-#ifdef ENABLE_INTRO
     FastLED.show();
-    delay(1000);
-    for (int i = 0; i < 255; i++) {
+#ifdef ENABLE_WIFI
+    byte i;
+    while (WiFi.status() != WL_CONNECTED) {
+        i++;
         FastLED.showColor(CRGB::Blue, i);
+        Serial.print(".");
         delay(5);
     }
     FastLED.clear(true);
@@ -163,7 +164,7 @@ void runLEDs() {
                     if (skip < abs(local_loc)) {
                         register byte pixBrightness = 255 * (-pow(local_loc / spread, 4) + 1) * brightness;
                         register unsigned int global_loc = d.f.fireworks[i].location + local_loc;
-                        leds[getLEDIndex(global_loc)] += CHSV(d.f.fireworks[i].hue + random(-10, 10), 255, pixBrightness);
+                        leds[getLEDIndex(global_loc)] += CHSV(d.f.fireworks[i].hue + random(-30, 30), 255, pixBrightness);
                         //^= because there might be overlapping fireworks. It should be brighter.
                     }
 
@@ -189,11 +190,22 @@ void runLEDs() {
                 for (byte i = 0; i < d.w.waveCount; i++) {
                     if (d.w.pts[i].iloc == 0) {
                         d.w.pts[i].location = random(NUM_LEDS); //Move to it by
-#define MAX_MOVE 100
-                        d.w.pts[i].finalLocation = d.w.pts[i].location + random(-MAX_MOVE, MAX_MOVE); //Move to it by
+#define MAX_MOVE 1000
+                        d.w.pts[i].finalLocation = d.w.pts[i].location + random(-MAX_MOVE, MAX_MOVE); //Move to it by a random amount
                         if (d.w.pts[i].finalLocation < 0) d.w.pts[i].finalLocation += NUM_LEDS;
+                        if (d.w.pts[i].finalLocation >= NUM_LEDS) d.w.pts[i].finalLocation -= NUM_LEDS;
                         d.w.pts[i].currentC = CHSV(random(255), 255, 255); //Soon, select between a list of colors, for now, selected randomly. Maybe option to select randomly? Checkbox
-                        d.w.pts[i].finalC = CHSV(random(255), 255, 255); //Soon, select between a list of colors, for now, selected randomly. Maybe option to select randomly? Checkbox
+                        if (d.w.random)
+                            d.w.pts[i].finalC = CHSV(random(255), 255, 255); //Soon, select between a list of colors, for now, selected randomly. Maybe option to select randomly? Checkbox
+                        else{
+                            if(d.w.colorsLength != 0) {
+                                d.w.pts[i].finalC = d.w.colors[i%d.w.colorsLength];
+                            }
+                            else {
+                                d.w.pts[i].finalC = CRGB::Black;
+                            }
+                        }
+                      
                     } else if (d.w.pts[i].iloc == d.w.pts[i].finalLocation) {
                         d.w.pts[i].finalLocation += random(-MAX_MOVE, MAX_MOVE); //Move to it by
                         if (d.w.pts[i].finalLocation < 0) d.w.pts[i].finalLocation += NUM_LEDS;
@@ -202,8 +214,8 @@ void runLEDs() {
                 }
                 //Increment the location and color.
                 for (byte i = 0; i < d.w.waveCount; i++) {
-                    d.w.pts[i].location += (d.w.pts[i].finalLocation - d.w.pts[i].location) * 0.1;
-                    d.w.pts[i].currentC = d.w.pts[i].currentC.lerp8(d.w.pts[i].finalC, 25);
+                    d.w.pts[i].location += (d.w.pts[i].finalLocation - d.w.pts[i].location) * 0.02 * spdInc(d.w.speed);
+                    d.w.pts[i].currentC = d.w.pts[i].currentC.lerp8(d.w.pts[i].finalC, 3);
                     d.w.pts[i].iloc = (int) (d.w.pts[i].location + 0.5);
                 }
 
