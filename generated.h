@@ -1,3 +1,14 @@
+//RGB Rotate -> rr
+//Random -> r
+//Dot -> d
+//HSV Pulse -> hp
+//Solid -> s
+//Pulse -> p
+//Pulse Random -> pr
+//Fireworks -> f
+//Waves -> w
+//Shift -> sh
+//Off -> o
 struct Firework {int location; byte maxSpread; int lifetime; byte hue;};
 struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};
 #define pt(x) {Serial.print(F(#x ": ")); Serial.println(x);}
@@ -69,6 +80,15 @@ struct WavesData {
      byte oldsize;
 };
 
+struct ShiftData {
+     byte speed;
+     byte colorsLength;
+     CRGB *colors;
+     float i;
+     byte oldindex;
+     byte newindex;
+};
+
 union Data {
      RGBRotateData rr;
      RandomData r;
@@ -79,12 +99,13 @@ union Data {
      PulseRandomData pr;
      FireworksData f;
      WavesData w;
+     ShiftData sh;
 } d;
 
 
 //**LEDOptions**
-char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Waves", "Off"};
-enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, WAVES, OFF};
+char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Waves", "Shift", "Off"};
+enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, WAVES, SHIFT, OFF};
 
 //**SETTERS CODE**
 void fillInArgs(Mode selected, ESP8266WebServer &server) {
@@ -141,6 +162,17 @@ void fillInArgs(Mode selected, ESP8266WebServer &server) {
             d.w.colors[i] = CRGB(strtoul(buff, NULL, 16));
         }
         break;
+    case SHIFT:
+        d.sh.speed = (byte) server.arg("p0").toInt();
+        d.sh.colorsLength = (byte) server.arg("p1").toInt();
+        delete[] d.sh.colors;
+        d.sh.colors = new CRGB[d.sh.colorsLength]();
+        for(byte i = 0; i < d.sh.colorsLength; i++) { 
+            sprintf(nameBuff, "3s%d", i);
+            server.arg(nameBuff).substring(1).toCharArray(buff, 7);
+            d.sh.colors[i] = CRGB(strtoul(buff, NULL, 16));
+        }
+        break;
      }
 }
 
@@ -180,7 +212,7 @@ font-size: min(6vw, 30px);\n\
 <h2 id=\"loading\">LOADING...</h2>\n\
 <label>\n\
 <select onchange='change()'>\n\
-<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Off</option>\
+<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Shift</option><option value='10'>Off</option>\
 </select>\n\
 </label>\n\
 <div style='margin-bottom: 3vh' id='s'></div>\n\
@@ -202,9 +234,10 @@ const inputs = {\n\
                 'Pulse Random': ['<div>Pulse Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"1\" checked oninput=\"u();\"></div>',2],\n\
                 'Fireworks': ['<div>Firework Count: <input type=\"range\" id=\"0\" max=\"30\" value=\"1\" oninput=\"u();\"></div>',1],\n\
                 'Waves': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Wave Count: <input type=\"range\" id=\"1\" max=\"10\" value=\"1\" oninput=\"u();\"></div><div>Random: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'!3\\\',\\\'!4\\\']);u();\"></div><div>Colors Length: <input type=\"range\" id=\"3\" max=\"10\" value=\"2\" oninput=\"cVLA(3,4);u();\"></div><div id=\"4\"></div>',5,()=>{cIF(2,['!3','!4']);cVLA(3,4);}],\n\
+                'Shift': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Colors Length: <input type=\"range\" id=\"1\" max=\"255\" value=\"2\" oninput=\"cVLA(1,2);u();\"></div><div id=\"2\"></div>',3,()=>{cVLA(1,2);}],\n\
                 'Off': ['',0],\n\
 };\n\
-vlas['4'] = 'color';\n\
+vlas['4'] = 'color';vlas['2'] = 'color';\n\
 const s = document.getElementsByTagName('select')[0];\n\
 const cont = document.getElementById('s');\n\
 function change() {\n\
@@ -312,6 +345,9 @@ void stringifyParams(Mode selected) {
         break;
     case WAVES:
         sprintf(spBuffer, "%i|%i|%i|%i|%i|", selected, d.w.speed, d.w.waveCount, d.w.random, d.w.colorsLength);
+        break;
+    case SHIFT:
+        sprintf(spBuffer, "%i|%i|%i|", selected, d.sh.speed, d.sh.colorsLength);
         break;
     case OFF:
         sprintf(spBuffer, "%i", selected);

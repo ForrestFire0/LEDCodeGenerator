@@ -34,6 +34,9 @@ void startSelected() {
             d.w.pts = new MovingVertex[0]();
             d.w.colors = new CRGB[2]();
             break;
+        case SHIFT:
+            d.sh.colors = new CRGB[2]();
+            break;
     }
 }
 
@@ -45,6 +48,9 @@ void endSelected(Mode oldselected) {
         case WAVES:
             delete[] d.w.pts;
             delete[] d.w.colors;
+            break;
+        case SHIFT:
+            delete[] d.sh.colors;
             break;
     }
 }

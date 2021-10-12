@@ -274,6 +274,29 @@ void runLEDs() {
                     }
                 }
             } break;
+        case SHIFT:
+            //If the VLA is empty, turn off the LEDs and return.
+            if(d.sh.colorsLength == 0) {
+                clearLEDs();
+                break;
+            }
+            //If either index is above the size of colors, lower it.
+            if(d.sh.newIndex >= d.sh.colorsLength) d.sh.newIndex = d.sh.colorsLength - 1;
+            if(d.sh.oldIndex >= d.sh.colorsLength) d.sh.oldIndex = d.sh.colorsLength - 1;
+            //Increment I.
+            d.sh.i += spdInc(d.sh.speed);
+            //Overflow/remapping colors
+            if(d.sh.i > 100) {
+                d.sh.i = 0;
+                d.sh.oldIndex = d.sh.newIndex;
+                d.sh.newIndex = random(0, colorsLength);
+            }
+            //If in the first 1/4, set it based on how much time has elapsed.
+            if(d.sh.i < 25.6) {
+                setAll(d.sh.colors[d.sh.oldIndex].lerp8(d.sh.colors[d.sh.newIndex], (int) (d.sh.i*10)));
+            } else //Otherwise, set it just to the new color.
+                setAll(d.sh.colors[d.sh.newIndex]);
+            break;
         case OFF:
             needWrite = false;
             break;
