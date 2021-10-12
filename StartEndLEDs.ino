@@ -2,6 +2,7 @@
 //Garunteed that after this function is called, the external members will be set
 void startSelected() {
     needFlip = false;
+    needUnFlip = false;
     memset(&d, 0, sizeof(d));
     FastLED.setBrightness(255);
     switch (selected) {
@@ -17,10 +18,11 @@ void startSelected() {
             break;
         case DOT:
             needFlip = true;
+            needUnFlip = true;
             clearLEDs();
             d.d.color = CRGB::Red;
             d.d.speed = 2;
-            d.d.led = 400;
+            d.d.led = 480;
             break;
         case FIREWORKS:
             needFlip = true;

@@ -14,22 +14,33 @@
 #define STASSID "umd-iot"
 #define STAPSK  "2kbgxi8svgye"
 #define ENABLE_WIFI
-//#define ENABLE_INTRO
+#define ENABLE_INTRO
 //#define ENABLE_FRAME_WAIT_FOR_KEY
-#define REFRESH_RATE 60 //Change this and animations get fucked.
 //#define TIME_DEBUG
+
+
+#define timeevent(label) {};
+#define start() {};
+#ifdef TIME_DEBUG
+unsigned long start;
+#undef timeevent(label)
+#undef start();
+#define timeevent(label) {Serial.print(label " :"); Serial.println(micros()-start); start = micros();}
+#define start() {start = micros();}
+#endif
+
 
 const char* ssid = STASSID;
 const char* password = STAPSK;
 
 Mode selected = OFF;
 
-ESP8266WebServer server(8888);
+ESP8266WebServer server(80);
+
+unsigned long lastRunTime;
 
 void handleRoot() {
-    memset(temp, ' ', TEMPLATE_MAX_SIZE);
-    snprintf(temp, TEMPLATE_MAX_SIZE, HTMLTemplate, (byte) selected);
-    server.send(200, F("text/html"), temp);
+    server.send(200, F("text/html"), HTMLTemplate);
     Serial.println(F("Responding and sending"));
 }
 
@@ -67,20 +78,23 @@ void setup(void) {
     Serial.println(ssid);
     Serial.print(F("Server starting on: "));
     Serial.print(WiFi.localIP());
-    Serial.println(":8888");
     server.on("/", handleRoot);
 
     server.on("/set", []() {
         Mode oldSelected = selected;
         selected = (Mode) server.arg(0).toInt();
         if (selected != oldSelected) {
-
+            endSelected(oldSelected);
             Serial.print(F("Set mode: "));
             Serial.println(LEDOptions[(byte) selected]);
             startSelected();
         }
         fillInArgs(selected, server);
         server.send(200, F("text/plain"), F("Set selected mode"));
+    });
+
+    server.on("/gt", []() {
+        server.send(200, F("text/plain"), String(1000000.0  / lastRunTime));
     });
 
     server.onNotFound(handleNotFound);
@@ -101,21 +115,8 @@ void loop(void) {
     }
     while (Serial.available()) Serial.read();
 #endif
+    lastRunTime = micros() - lastRunTime;
     server.handleClient();
-    if (millis() - nextRun > 1000 / REFRESH_RATE) {
-        nextRun += 1000 / REFRESH_RATE;
-#ifdef TIME_DEBUG
-        unsigned long now = millis();
-#endif
-        runLEDs();
-#ifdef TIME_DEBUG
-        unsigned long done = millis();
-        Serial.print("Current Time: ");
-        Serial.print(done);
-        Serial.print(" : ");
-        Serial.print(done - now);
-        Serial.println("ms");
-#endif
-    }
+    runLEDs();
     yield();
 }
