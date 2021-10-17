@@ -69,6 +69,25 @@ struct WavesData {
      byte oldsize;
 };
 
+struct BriansFunctionData {
+     CRGB color;
+     byte pulseSpeed;
+     byte pulseIntensity;
+     byte i;
+};
+
+struct BriansFunction2Data {
+     CRGB color;
+     CRGB color1;
+     CRGB color2;
+     CRGB color3;
+     byte i;
+};
+
+struct BriansFunctionStaticData {
+     byte i;
+};
+
 union Data {
      RGBRotateData rr;
      RandomData r;
@@ -79,12 +98,15 @@ union Data {
      PulseRandomData pr;
      FireworksData f;
      WavesData w;
+     BriansFunctionData bf;
+     BriansFunction2Data bf2;
+     BriansFunctionStaticData bfs;
 } d;
 
 
 //**LEDOptions**
-char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Waves", "Off"};
-enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, WAVES, OFF};
+char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Waves", "Brians Function", "Brians Function 2", "Brians Function Static", "Off"};
+enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, WAVES, BRIANS_FUNCTION, BRIANS_FUNCTION_2, BRIANS_FUNCTION_STATIC, OFF};
 
 //**SETTERS CODE**
 void fillInArgs(Mode selected, ESP8266WebServer &server) {
@@ -141,6 +163,22 @@ void fillInArgs(Mode selected, ESP8266WebServer &server) {
             d.w.colors[i] = CRGB(strtoul(buff, NULL, 16));
         }
         break;
+    case BRIANS_FUNCTION:
+        server.arg("p0").substring(1).toCharArray(buff, 7);
+        d.bf.color = CRGB(strtoul(buff, NULL, 16));
+        d.bf.pulseSpeed = (byte) server.arg("p1").toInt();
+        d.bf.pulseIntensity = (byte) server.arg("p2").toInt();
+        break;
+    case BRIANS_FUNCTION_2:
+        server.arg("p0").substring(1).toCharArray(buff, 7);
+        d.bf2.color = CRGB(strtoul(buff, NULL, 16));
+        server.arg("p1").substring(1).toCharArray(buff, 7);
+        d.bf2.color1 = CRGB(strtoul(buff, NULL, 16));
+        server.arg("p2").substring(1).toCharArray(buff, 7);
+        d.bf2.color2 = CRGB(strtoul(buff, NULL, 16));
+        server.arg("p3").substring(1).toCharArray(buff, 7);
+        d.bf2.color3 = CRGB(strtoul(buff, NULL, 16));
+        break;
      }
 }
 
@@ -180,7 +218,7 @@ font-size: min(6vw, 30px);\n\
 <h2 id=\"loading\">LOADING...</h2>\n\
 <label>\n\
 <select onchange='change()'>\n\
-<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Off</option>\
+<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Brians Function</option><option value='10'>Brians Function 2</option><option value='11'>Brians Function Static</option><option value='12'>Off</option>\
 </select>\n\
 </label>\n\
 <div style='margin-bottom: 3vh' id='s'></div>\n\
@@ -202,6 +240,9 @@ const inputs = {\n\
                 'Pulse Random': ['<div>Pulse Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"1\" checked oninput=\"u();\"></div>',2],\n\
                 'Fireworks': ['<div>Firework Count: <input type=\"range\" id=\"0\" max=\"30\" value=\"1\" oninput=\"u();\"></div>',1],\n\
                 'Waves': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Wave Count: <input type=\"range\" id=\"1\" max=\"10\" value=\"1\" oninput=\"u();\"></div><div>Random: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'!3\\\',\\\'!4\\\']);u();\"></div><div>Colors Length: <input type=\"range\" id=\"3\" max=\"10\" value=\"2\" oninput=\"cVLA(3,4);u();\"></div><div id=\"4\"></div>',5,()=>{cIF(2,['!3','!4']);cVLA(3,4);}],\n\
+                'Brians Function': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Pulse Intensity: <input type=\"range\" id=\"2\" max=\"255\" value=\"127\" oninput=\"cIF(2,[\\\'N2\\\']);u();\"></div>',3,()=>{cIF(2,['N2']);}],\n\
+                'Brians Function 2': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color1: <input type=\"color\" id=\"1\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color2: <input type=\"color\" id=\"2\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color3: <input type=\"color\" id=\"3\" value=\"#0000ff\" oninput=\"u();\"></div>',4],\n\
+                'Brians Function Static': ['',0],\n\
                 'Off': ['',0],\n\
 };\n\
 vlas['4'] = 'color';\n\
@@ -283,7 +324,7 @@ newData = false;\n\
 </html>\n";
 
 //**STRINGIFY PARAMS**
-char spBuffer[31];
+char spBuffer[53];
 void stringifyParams(Mode selected) {
     switch (selected) {
     case RGB_ROTATE:
@@ -312,6 +353,15 @@ void stringifyParams(Mode selected) {
         break;
     case WAVES:
         sprintf(spBuffer, "%i|%i|%i|%i|%i|", selected, d.w.speed, d.w.waveCount, d.w.random, d.w.colorsLength);
+        break;
+    case BRIANS_FUNCTION:
+        sprintf(spBuffer, "%i|#%02X%02X%02X|%i|%i", selected, d.bf.color.r, d.bf.color.g, d.bf.color.b, d.bf.pulseSpeed, d.bf.pulseIntensity);
+        break;
+    case BRIANS_FUNCTION_2:
+        sprintf(spBuffer, "%i|#%02X%02X%02X|#%02X%02X%02X|#%02X%02X%02X|#%02X%02X%02X", selected, d.bf2.color.r, d.bf2.color.g, d.bf2.color.b, d.bf2.color1.r, d.bf2.color1.g, d.bf2.color1.b, d.bf2.color2.r, d.bf2.color2.g, d.bf2.color2.b, d.bf2.color3.r, d.bf2.color3.g, d.bf2.color3.b);
+        break;
+    case BRIANS_FUNCTION_STATIC:
+        sprintf(spBuffer, "%i", selected);
         break;
     case OFF:
         sprintf(spBuffer, "%i", selected);
