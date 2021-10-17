@@ -1,3 +1,14 @@
+//RGB Rotate -> rr
+//Random -> r
+//Dot -> d
+//HSV Pulse -> hp
+//Solid -> s
+//Pulse -> p
+//Pulse Random -> pr
+//Fireworks -> f
+//Waves -> w
+//Shift -> sh
+//Off -> o
 struct Firework {int location; byte maxSpread; int lifetime; byte hue;};
 struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};
 #define pt(x) {Serial.print(F(#x ": ")); Serial.println(x);}
@@ -101,12 +112,14 @@ union Data {
      BriansFunctionData bf;
      BriansFunction2Data bf2;
      BriansFunctionStaticData bfs;
+     ShiftData sh;
 } d;
 
 
 //**LEDOptions**
 char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Waves", "Brians Function", "Brians Function 2", "Brians Function Static", "Off"};
 enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, WAVES, BRIANS_FUNCTION, BRIANS_FUNCTION_2, BRIANS_FUNCTION_STATIC, OFF};
+
 
 //**SETTERS CODE**
 void fillInArgs(Mode selected, ESP8266WebServer &server) {
@@ -245,7 +258,7 @@ const inputs = {\n\
                 'Brians Function Static': ['',0],\n\
                 'Off': ['',0],\n\
 };\n\
-vlas['4'] = 'color';\n\
+vlas['4'] = 'color';vlas['2'] = 'color';\n\
 const s = document.getElementsByTagName('select')[0];\n\
 const cont = document.getElementById('s');\n\
 function change() {\n\

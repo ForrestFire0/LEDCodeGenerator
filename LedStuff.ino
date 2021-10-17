@@ -280,6 +280,146 @@ void runLEDs() {
             }
             leds[i] = back.currentC.lerp8(front.currentC, frac);
           }
+            break;
+        case WAVES: {
+                if (d.w.waveCount != d.w.oldsize) {
+                    byte oldSize = min(d.w.waveCount, d.w.oldsize);
+                    MovingVertex old[oldSize];
+                    for (int i = 0; i < oldSize; i++) {
+                        old[i] = d.w.pts[i];
+                    }
+                    delete[] d.w.pts;
+                    // Create the new array. For the
+                    d.w.pts = new MovingVertex[d.w.waveCount]();
+                    for (int i = 0; i < oldSize; i++) {
+                        d.w.pts[i] = old[i];
+                    }
+                    d.w.oldsize = d.w.waveCount;
+                }
+                //Determine if we need to re-randomize any of them (aka, don't change where they currently are, just where they are going.
+                for (byte i = 0; i < d.w.waveCount; i++) {
+                    if (d.w.pts[i].iloc == 0) {
+                        d.w.pts[i].location = random(NUM_LEDS); //Move to it by
+#define MAX_MOVE 1000
+                        d.w.pts[i].finalLocation = d.w.pts[i].location + random(-MAX_MOVE, MAX_MOVE); //Move to it by a random amount
+                        if (d.w.pts[i].finalLocation < 0) d.w.pts[i].finalLocation += NUM_LEDS;
+                        if (d.w.pts[i].finalLocation >= NUM_LEDS) d.w.pts[i].finalLocation -= NUM_LEDS;
+                        d.w.pts[i].currentC = CHSV(random(255), 255, 255); //Soon, select between a list of colors, for now, selected randomly. Maybe option to select randomly? Checkbox
+                        if (d.w.random)
+                            d.w.pts[i].finalC = CHSV(random(255), 255, 255); //Soon, select between a list of colors, for now, selected randomly. Maybe option to select randomly? Checkbox
+                        else{
+                            if(d.w.colorsLength != 0) {
+                                d.w.pts[i].finalC = d.w.colors[i%d.w.colorsLength];
+                            }
+                            else {
+                                d.w.pts[i].finalC = CRGB::Black;
+                            }
+                        }
+                      
+                    } else if (d.w.pts[i].iloc == d.w.pts[i].finalLocation) {
+                        d.w.pts[i].finalLocation += random(-MAX_MOVE, MAX_MOVE); //Move to it by
+                        if (d.w.pts[i].finalLocation < 0) d.w.pts[i].finalLocation += NUM_LEDS;
+                        d.w.pts[i].finalC = CHSV(random(255), 255, 255); //Soon, select between a list of colors, for now, selected randomly. Maybe option to select randomly? Checkbox
+                    }
+                }
+                //Increment the location and color.
+                for (byte i = 0; i < d.w.waveCount; i++) {
+                    d.w.pts[i].location += (d.w.pts[i].finalLocation - d.w.pts[i].location) * 0.02 * spdInc(d.w.speed);
+                    d.w.pts[i].currentC = d.w.pts[i].currentC.lerp8(d.w.pts[i].finalC, 3);
+                    d.w.pts[i].iloc = (int) (d.w.pts[i].location + 0.5);
+                }
+
+                //Sort those motherf***ers
+                MovingVertex temp;
+                for (byte i = 0; i < d.w.waveCount; i++)
+                {
+                    for (byte j = i + 1; j < d.w.waveCount; j++)
+                    {
+                        if (d.w.pts[i].location == d.w.pts[j].location)
+                            d.w.pts[i].location += 1;
+                        if (d.w.pts[i].location > d.w.pts[j].location)
+                        {
+                            temp = d.w.pts[i];
+                            d.w.pts[i] = d.w.pts[j];
+                            d.w.pts[j] = temp;
+                        }
+                    }
+                }
+
+                if (d.w.waveCount == 0) {
+                    setAll(CRGB::Black);
+                    return;
+                }
+                if (d.w.waveCount == 1)
+                    setAll(d.w.pts[1].currentC);
+                //Nothing every dies, it just moves. We might need to resize the array however, and create new ones.
+                //We need to sort the array by index.
+                MovingVertex back = d.w.pts[d.w.waveCount - 1];
+                MovingVertex front = d.w.pts[0];
+                byte currentFrontIndex = 0;
+                //Now, we need to go through each LED
+                for (int i = 0; i < NUM_LEDS; i++) {
+                    if (i == front.iloc) {
+                        //it is time to advance.
+                        back = front; //Set the back pointer to point at the front
+                        currentFrontIndex++;
+                        if (currentFrontIndex == d.w.waveCount)
+                            front = d.w.pts[0];
+                        else
+                            front = d.w.pts[currentFrontIndex];
+                        leds[i] = back.currentC;
+                    } else {
+                        //Now, lets find the color by linearly interpolating front the back to the front.
+                        //i will not equal front location, however it will equal back location often.
+                        register byte frac;
+                        if (front.iloc > back.iloc)
+                            frac = ((i - back.iloc) * 256) / (front.iloc - back.iloc);
+                        else {
+                            if (i >= back.iloc)
+                                frac = ((i - back.iloc) * 256) / (int)(front.iloc - back.iloc + NUM_LEDS);
+                            else
+                                frac = ((i - back.iloc + NUM_LEDS) * 256) / (int)(front.iloc - back.iloc + NUM_LEDS);
+                        }
+                        leds[i] = back.currentC.lerp8(front.currentC, frac);
+                    }
+                }
+            } break;
+        case SHIFT:
+            //If the VLA is empty, turn off the LEDs and return.
+            if(d.sh.colorsLength == 0) {
+                clearLEDs();
+                break;
+            }
+            //If either index is above the size of colors, lower it.
+            if(d.sh.newIndex >= d.sh.colorsLength) d.sh.newIndex = d.sh.colorsLength - 1;
+            if(d.sh.oldIndex >= d.sh.colorsLength) d.sh.oldIndex = d.sh.colorsLength - 1;
+            //Increment I.
+            d.sh.i += spdInc(d.sh.speed);
+            //Overflow/remapping colors
+            if(d.sh.i > 100) {
+                d.sh.i = 0;
+                d.sh.oldIndex = d.sh.newIndex;
+                d.sh.newIndex = random(0, colorsLength);
+            }
+            //If in the first 1/4, set it based on how much time has elapsed.
+            if(d.sh.i < 25.6) {
+                setAll(d.sh.colors[d.sh.oldIndex].lerp8(d.sh.colors[d.sh.newIndex], (int) (d.sh.i*10)));
+            } else //Otherwise, set it just to the new color.
+                setAll(d.sh.colors[d.sh.newIndex]);
+            break;
+        case OFF:
+            needWrite = false;
+            break;
+    }
+    if (!needWrite) return;
+    if (needFlip) {
+        //                    (      658                )
+        for (int i = 450; i < (NUM_LEDS - 450) / 2 + 450; i++) {
+            register unsigned int ind1 = i;
+            register unsigned int ind2 = NUM_LEDS - (i - 450) - 1;
+            CRGB temp = leds[ind1];
+            leds[ind1] = leds[ind2];
+            leds[ind2] = temp;
         }
       } break;
     case BRIANS_FUNCTION:

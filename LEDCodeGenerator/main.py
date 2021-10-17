@@ -226,6 +226,7 @@ if __name__ == '__main__':
         used_names.append(temp_name)
         m['v_name'] = temp_name
         m['enum_name'] = m['name'].upper().replace(' ', '_')
+        fileout.write(f'//{m["name"]} -> {m["v_name"]}\n')
     # Look for and create VLA length sliders/bytes.
     for m in data['modes']:
         if m.get('um'):
@@ -241,7 +242,7 @@ if __name__ == '__main__':
                                                 {'if': me[1].get('if')}])
                         else:
                             m.get('um').insert(index,
-                                               "byte " + (" ".join(me[0].split(' ')[1:]) + " Length").replace('*', ''))
+                                               ["byte " + (" ".join(me[0].split(' ')[1:]) + " Length").replace('*', ''), {}])
                         m['um'][index][1]['VLA4'] = index + 1
                         if m.get('max'):
                             m.get('max')[str(index)] = max_len
