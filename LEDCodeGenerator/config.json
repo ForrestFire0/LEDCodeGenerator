@@ -37,15 +37,15 @@
       "um": [
         "byte Hue Rate",
         "byte Pulse Speed",
-        "byte Pulse Intensity",
-        "bool Sinusoidal Dimming"
+        "bool Sinusoidal Dimming",
+        ["byte Pulse Intensity", {"if": "2"}]
       ],
       "im": [
         "float h",
         "byte v",
         "byte other"
       ],
-      "default": [118, 118, 127, true]
+      "default": [118, 118, true, 172]
     },
     {
       "name": "Solid",
@@ -64,13 +64,13 @@
       "um": [
         "CRGB Color",
         "byte Pulse Speed",
-        "byte Pulse Intensity",
-        "bool Sinusoidal Dimming"
+        "bool Sinusoidal Dimming",
+        ["byte Pulse Intensity", {"if": "2"}]
       ],
       "im": [
         "byte i"
       ],
-      "default": ["#0000ff", "118", "127", true]
+      "default": ["#0000ff", "118", true, "127"]
     },
     {
       "name": "Pulse Random",
@@ -93,24 +93,82 @@
         "Firework* fireworks"
       ],
       "default": [1],
-      "max": [20]
-    },{
-      "name":"BrianTest",
+      "max": {"0": 30}
+    },
+    {
+      "name": "Waves",
       "um": [
-        "byte Pulse Speed"
+        "byte Speed",
+        "byte Wave Count",
+        "boolean Random",
+        ["CRGB *Colors", {"if": "!2", "VLA": {"index": "create", "max": 10, "default": 2}}]
       ],
-      "default": [
-        "118"
-      ]
+      "im": [
+        "MovingVertex *pts",
+        "byte oldsize"
+      ],
+      "default": [118, 1, true],
+      "max": {"1": 10}
+    },
+    {
+      "name": "Shift",
+      "um": [
+        "byte Speed",
+        ["CRGB *Colors", {"VLA": {"index": "create", "max": 10, "default": 2}}]
+      ],
+      "im": [
+        "float i",
+        "byte oldIndex",
+        "byte newIndex"
+      ],
+      "default": [118]
+    },
+    {
+      "name": "Brians Function",
+      "um": [
+        "CRGB Color",
+        "byte Pulse Speed",
+        ["byte Pulse Intensity", {"if": "2"}]
+      ],
+      "im": [
+        "byte i"
+      ],
+      "default": ["#0000ff", "118", "127"]
+    },
+      {
+      "name": "Brians Function 2",
+      "um": [
+        "CRGB Color",
+        "CRGB Color1",
+        "CRGB Color2",
+        "CRGB Color3"
+      ],
+      "im": [
+        "byte i"
+      ],
+      "default": ["#0000ff", "#0000ff","#0000ff","#0000ff"]
+    },
+    {
+      "name": "Brians Function Static",
+      "um": [
+
+      ],
+      "im": [
+        "byte i"
+      ],
+      "default": ["#0000ff", "118", "127"]
     },
     {
       "name": "Off"
     }
   ],
   "insert": [
-    "struct Firework {int location; byte maxSpread; int lifetime; byte hue;};\n",
-    "#define pt(x) {Serial.print(#x \": \"); Serial.println(x);}",
+    "struct Firework {int location; byte maxSpread; int lifetime; byte hue;};",
+    "struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};",
+    "#define pt(x) {Serial.print(F(#x \": \")); Serial.println(x);}",
     "#define ps(x) Serial.println(F(x));",
-    "#define pfire(x) {Serial.print(F(\"Firework {\")); Serial.print(x.location); Serial.print(\", \"); Serial.print(x.maxSpread); Serial.print(\", \"); Serial.print(x.lifetime); Serial.print(\", \"); Serial.print(x.hue); Serial.println(\"}\");};"
+    "#define pfire(x) {Serial.print(F(\"Firework {\")); Serial.print(x.location); Serial.print(F(\", \")); Serial.print(x.maxSpread); Serial.print(F(\", \")); Serial.print(x.lifetime); Serial.print(F(\", \")); Serial.print(x.hue); Serial.println(\"}\");};",
+    "#define prgb(c) {Serial.print(\"{\"); Serial.print(c.r); Serial.print(\",\"); Serial.print(c.g); Serial.print(\",\"); Serial.print(c.b); Serial.print(\"}\");};",
+    "#define pmove(x) {Serial.print(F(\"MovingVertex {\")); Serial.print(x.location); Serial.print(F(\", \")); Serial.print(x.finalLocation); Serial.print(F(\", \")); prgb(x.currentC); Serial.print(F(\", \")); prgb(x.finalC); Serial.println(F(\"}\"));};"
   ]
 }

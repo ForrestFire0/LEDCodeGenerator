@@ -8,6 +8,9 @@
 //Fireworks -> f
 //Waves -> w
 //Shift -> sh
+//Brians Function -> bf
+//Brians Function 2 -> bf2
+//Brians Function Static -> bfs
 //Off -> o
 struct Firework {int location; byte maxSpread; int lifetime; byte hue;};
 struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};
@@ -80,6 +83,15 @@ struct WavesData {
      byte oldsize;
 };
 
+struct ShiftData {
+     byte speed;
+     byte colorsLength;
+     CRGB *colors;
+     float i;
+     byte oldindex;
+     byte newindex;
+};
+
 struct BriansFunctionData {
      CRGB color;
      byte pulseSpeed;
@@ -109,17 +121,16 @@ union Data {
      PulseRandomData pr;
      FireworksData f;
      WavesData w;
+     ShiftData sh;
      BriansFunctionData bf;
      BriansFunction2Data bf2;
      BriansFunctionStaticData bfs;
-     ShiftData sh;
 } d;
 
 
 //**LEDOptions**
-char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Waves", "Brians Function", "Brians Function 2", "Brians Function Static", "Off"};
-enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, WAVES, BRIANS_FUNCTION, BRIANS_FUNCTION_2, BRIANS_FUNCTION_STATIC, OFF};
-
+char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Waves", "Shift", "Brians Function", "Brians Function 2", "Brians Function Static", "Off"};
+enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, WAVES, SHIFT, BRIANS_FUNCTION, BRIANS_FUNCTION_2, BRIANS_FUNCTION_STATIC, OFF};
 
 //**SETTERS CODE**
 void fillInArgs(Mode selected, ESP8266WebServer &server) {
@@ -174,6 +185,17 @@ void fillInArgs(Mode selected, ESP8266WebServer &server) {
             sprintf(nameBuff, "5s%d", i);
             server.arg(nameBuff).substring(1).toCharArray(buff, 7);
             d.w.colors[i] = CRGB(strtoul(buff, NULL, 16));
+        }
+        break;
+    case SHIFT:
+        d.sh.speed = (byte) server.arg("p0").toInt();
+        d.sh.colorsLength = (byte) server.arg("p1").toInt();
+        delete[] d.sh.colors;
+        d.sh.colors = new CRGB[d.sh.colorsLength]();
+        for(byte i = 0; i < d.sh.colorsLength; i++) { 
+            sprintf(nameBuff, "3s%d", i);
+            server.arg(nameBuff).substring(1).toCharArray(buff, 7);
+            d.sh.colors[i] = CRGB(strtoul(buff, NULL, 16));
         }
         break;
     case BRIANS_FUNCTION:
@@ -231,7 +253,7 @@ font-size: min(6vw, 30px);\n\
 <h2 id=\"loading\">LOADING...</h2>\n\
 <label>\n\
 <select onchange='change()'>\n\
-<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Brians Function</option><option value='10'>Brians Function 2</option><option value='11'>Brians Function Static</option><option value='12'>Off</option>\
+<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Shift</option><option value='10'>Brians Function</option><option value='11'>Brians Function 2</option><option value='12'>Brians Function Static</option><option value='13'>Off</option>\
 </select>\n\
 </label>\n\
 <div style='margin-bottom: 3vh' id='s'></div>\n\
@@ -253,6 +275,7 @@ const inputs = {\n\
                 'Pulse Random': ['<div>Pulse Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"1\" checked oninput=\"u();\"></div>',2],\n\
                 'Fireworks': ['<div>Firework Count: <input type=\"range\" id=\"0\" max=\"30\" value=\"1\" oninput=\"u();\"></div>',1],\n\
                 'Waves': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Wave Count: <input type=\"range\" id=\"1\" max=\"10\" value=\"1\" oninput=\"u();\"></div><div>Random: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'!3\\\',\\\'!4\\\']);u();\"></div><div>Colors Length: <input type=\"range\" id=\"3\" max=\"10\" value=\"2\" oninput=\"cVLA(3,4);u();\"></div><div id=\"4\"></div>',5,()=>{cIF(2,['!3','!4']);cVLA(3,4);}],\n\
+                'Shift': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Colors Length: <input type=\"range\" id=\"1\" max=\"255\" value=\"2\" oninput=\"cVLA(1,2);u();\"></div><div id=\"2\"></div>',3,()=>{cVLA(1,2);}],\n\
                 'Brians Function': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Pulse Intensity: <input type=\"range\" id=\"2\" max=\"255\" value=\"127\" oninput=\"cIF(2,[\\\'N2\\\']);u();\"></div>',3,()=>{cIF(2,['N2']);}],\n\
                 'Brians Function 2': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color1: <input type=\"color\" id=\"1\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color2: <input type=\"color\" id=\"2\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color3: <input type=\"color\" id=\"3\" value=\"#0000ff\" oninput=\"u();\"></div>',4],\n\
                 'Brians Function Static': ['',0],\n\
@@ -366,6 +389,9 @@ void stringifyParams(Mode selected) {
         break;
     case WAVES:
         sprintf(spBuffer, "%i|%i|%i|%i|%i|", selected, d.w.speed, d.w.waveCount, d.w.random, d.w.colorsLength);
+        break;
+    case SHIFT:
+        sprintf(spBuffer, "%i|%i|%i|", selected, d.sh.speed, d.sh.colorsLength);
         break;
     case BRIANS_FUNCTION:
         sprintf(spBuffer, "%i|#%02X%02X%02X|%i|%i", selected, d.bf.color.r, d.bf.color.g, d.bf.color.b, d.bf.pulseSpeed, d.bf.pulseIntensity);
