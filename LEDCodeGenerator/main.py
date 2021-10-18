@@ -211,8 +211,9 @@ def generateStringifyParams():
 
 
 if __name__ == '__main__':
-    data = json.load(open("config.json"))
     fileout = open(os.path.dirname(__file__) + '/../generated.h', 'w+')
+    data = json.load(open("config.json"))
+    
     fileout.truncate(0)
     used_names = []
     for m in data['modes']:  # Give it a class name, a unique variable name. Also create the VLA variables if needed.
