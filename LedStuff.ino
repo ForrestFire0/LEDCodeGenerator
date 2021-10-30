@@ -7,7 +7,7 @@ CRGB leds[NUM_LEDS];
 #include <FastLED.h>
 //stuff for BriansFunction
 CRGBPalette16 currentPalette  = CloudColors_p;
-TBlendType    currentBlending;
+TBlendType currentBlending;
 extern CRGBPalette16 myRedWhiteBluePalette;
 extern const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM;
 
@@ -20,7 +20,7 @@ void startLEDs() {
     while (WiFi.status() != WL_CONNECTED) {
         i++;
         FastLED.showColor(CRGB::Blue, i);
-        Serial.print(".");
+        if(i%500 == 0) p(".");
         delay(5);
     }
     FastLED.clear(true);
@@ -40,7 +40,7 @@ void runInitLEDS() {
 
 float spdInc(byte speed) {
     if (speed == 0) return 0;
-    return 0.0281 * exp(0.0301 * speed);
+    return 0.0281f * exp(0.0301f * speed);
 }
 
 bool needFlip; //Set to true to flip the second half of the array.
@@ -183,8 +183,7 @@ void runLEDs() {
                 }
                 //Determine if we need to re-randomize any of them (aka, don't change where they currently are, just where they are going.
                 for (byte i = 0; i < d.w.waveCount; i++) {
-                    if (d.w.pts[i].iloc == 0) {
-                        d.w.pts[i].location = random(NUM_LEDS); //Move to it by
+                    if (d.w.pts[i].iloc == d.w.pts[i].finalLocation) {
 #define MAX_MOVE 1000
                         d.w.pts[i].finalLocation = getLEDIndex(d.w.pts[i].location + random(-MAX_MOVE, MAX_MOVE)); //Move to it by a random amount
                         if (d.w.random)
@@ -197,24 +196,18 @@ void runLEDs() {
                                 d.w.pts[i].finalC = CRGB::Black;
                             }
                         }
-                    } else if (d.w.pts[i].iloc == d.w.pts[i].finalLocation) {
-                        d.w.pts[i].finalLocation += random(-MAX_MOVE, MAX_MOVE); //Move to it by
-                        if (d.w.pts[i].finalLocation < 0) d.w.pts[i].finalLocation += NUM_LEDS;
-                        d.w.pts[i].finalC = CHSV(random(255), 255, 255); //Soon, select between a list of colors, for now, selected randomly. Maybe option to select randomly? Checkbox
                     }
                 }
                 //Increment the location and color.
                 for (byte i = 0; i < d.w.waveCount; i++) {
                     d.w.pts[i].location += (d.w.pts[i].finalLocation - d.w.pts[i].location) * 0.02 * spdInc(d.w.speed);
-                    d.w.pts[i].currentC = d.w.pts[i].currentC.lerp8(d.w.pts[i].finalC, 3);
                     d.w.pts[i].iloc = (int) (d.w.pts[i].location + 0.5);
+                    pmove(d.w.pts[i]);
                 }
-                //Sort those motherf***ers
+                //Sort those guys
                 MovingVertex temp;
-                for (byte i = 0; i < d.w.waveCount; i++)
-                {
-                    for (byte j = i + 1; j < d.w.waveCount; j++)
-                    {
+                for (byte i = 0; i < d.w.waveCount; i++) {
+                    for (byte j = i + 1; j < d.w.waveCount; j++) {
                         if (d.w.pts[i].location == d.w.pts[j].location)
                             d.w.pts[i].location += 1;
                         if (d.w.pts[i].location > d.w.pts[j].location)
@@ -260,7 +253,8 @@ void runLEDs() {
                             else
                                 frac = ((i - back.iloc + NUM_LEDS) * 256) / (int)(front.iloc - back.iloc + NUM_LEDS);
                         }
-                        leds[i] = back.currentC.lerp8(front.currentC, frac);
+                        //                        leds[i] = back.currentC.lerp8(front.currentC, frac);
+                        leds[i] = back.finalC.lerp8(front.finalC, frac);
                     }
                 }
             }
@@ -270,23 +264,28 @@ void runLEDs() {
             if (d.sh.colorsLength == 0) {
                 clearLEDs();
                 break;
+            } else if (d.sh.colorsLength == 1) {
+                setAll(d.sh.colors[0]);
+                break;
+            } else {
+                //If either index is above the size of colors, lower it.
+                if (d.sh.newIndex >= d.sh.colorsLength) d.sh.newIndex = d.sh.colorsLength - 1;
+                if (d.sh.oldIndex >= d.sh.colorsLength) d.sh.oldIndex = d.sh.colorsLength - 1;
+                //Increment I.
+                d.sh.i += min(spdInc(d.sh.speed), 100.0f);
+                //Overflow/remapping colors
+                if (d.sh.i > 100) {
+                    d.sh.i = 0;
+                    d.sh.oldIndex = d.sh.newIndex;
+                    while (d.sh.newIndex == d.sh.oldIndex) //Make sure same one is selected again
+                        d.sh.newIndex = random(0, d.sh.colorsLength);
+                } //If in the first 1/4, set it based on how much time has elapsed.
+                if (d.sh.i < d.sh.transitionTime) {
+                    setAll(d.sh.colors[d.sh.oldIndex].lerp8(d.sh.colors[d.sh.newIndex], (int) (d.sh.i * 256.0f / d.sh.transitionTime)));
+                } else {//Otherwise, set it just to the new color.
+                    setAll(d.sh.colors[d.sh.newIndex]);
+                }
             }
-            //If either index is above the size of colors, lower it.
-            if (d.sh.newIndex >= d.sh.colorsLength) d.sh.newIndex = d.sh.colorsLength - 1;
-            if (d.sh.oldIndex >= d.sh.colorsLength) d.sh.oldIndex = d.sh.colorsLength - 1;
-            //Increment I.
-            d.sh.i += spdInc(d.sh.speed);
-            //Overflow/remapping colors
-            if (d.sh.i > 100) {
-                d.sh.i = 0;
-                d.sh.oldIndex = d.sh.newIndex;
-                d.sh.newIndex = random(0, colorsLength);
-            }
-            //If in the first 1/4, set it based on how much time has elapsed.
-            if (d.sh.i < 25.6) {
-                setAll(d.sh.colors[d.sh.oldIndex].lerp8(d.sh.colors[d.sh.newIndex], (int) (d.sh.i * 10)));
-            } else //Otherwise, set it just to the new color.
-                setAll(d.sh.colors[d.sh.newIndex]);
             break;
         case OFF:
             needWrite = false;
@@ -348,20 +347,21 @@ void setAll(CRGB color) {
 }
 
 inline __attribute__((always_inline)) unsigned int getLEDIndex(int i)  {
-    if (i >= NUM_LEDS) i -= NUM_LEDS;
-    if (i < 0) i += NUM_LEDS;
+    while (i >= NUM_LEDS) i -= NUM_LEDS;
+    while (i < 0) i += NUM_LEDS;
     return i;
 }
 
 
 void printLEDs() {
-    for (int i = 0; i < 867; i++) {
+    for (int i = 0; i < NUM_LEDS; i++) {
         if (leds[i].r > 0 || leds[i].g > 0 || leds[i].b > 0) {
-            Serial.print(i);
-            Serial.print(" - ");
+            p(i);
+            ps("-");
             prgb(leds[i]);
         }
     }
+    pl();
 }
 
 void FillLEDsFromPaletteColors( uint8_t colorIndex)
@@ -459,8 +459,6 @@ void SetupPurpleAndGreenPalette()
                          green,  green,  black,  black,
                          purple, purple, black,  black );
 }
-
-
 
 const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM =
 {

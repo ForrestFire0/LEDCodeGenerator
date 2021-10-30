@@ -25,7 +25,9 @@ How to write a new mode:
     4. Add the name field. This is the name of the mode which appears on the HTML page.
     5. Add the 'um' (**U**ser editable **M**embers) field. This is an array of strings which are variable delarations of
        variables you want the user to be able to edit. Currently only byte, CRGB objects, and bool/boolean values are
-       allowed. Bytes will show up as a slider, CRGB objects as a color picker, and booleans as a checkbox.
+       allowed. Bytes will show up as a slider, CRGB objects as a color picker, and booleans as a checkbox. Note: You
+       should input the name of the um variable as a normal title (ex: "CRGB Secondary Color"). This will be turned into
+       a vairble name following camel case rules. (ex: "CRGB secondaryColor")
     6. Add the 'im' (**I**nternal **M**embers) field. This is an array of strings which are again, variable declarations
        of variables that you want to have in the code for that mode, but you don't need the user to be able to edit. "
        Dot" (line 23) is a good example of this. It has the colors and the speeds available to the user, but it has the
@@ -59,7 +61,4 @@ by the selected variable.
 input (just press enter in the input box). Helpful when debugging animations to slow the stream of data.
 
 `TIME_DEBUG`- Prints out information about how long an animation + writing to leds takes.
-
-`#define REFRESH_RATE 60` - Globally slows the rate at which the leds are recalculated and drawn. This should be kept
-constant - if you need to move a pixel, check out what I did with the float to int conversion.
 

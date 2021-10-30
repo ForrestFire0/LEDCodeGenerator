@@ -61,7 +61,9 @@
         const newLen = parseInt(slider.value);
         if (oldLen < newLen)
             for (let i = oldLen; i < newLen; i++) {
-                div.innerHTML += '<input type="' + vlas['' + divID] + '" oninput="u()">';
+                const t = document.createElement('template');
+                t.innerHTML = '<input type="' + vlas['' + divID] + '" oninput="u()">';
+                div.appendChild(t.content);
             }
         else while (div.children.length > newLen) {
             div.removeChild(div.lastChild);

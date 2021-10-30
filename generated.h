@@ -14,117 +14,115 @@
 //Off -> o
 struct Firework {int location; byte maxSpread; int lifetime; byte hue;};
 struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};
-#define pt(x) {Serial.print(F(#x ": ")); Serial.println(x);}
-#define ps(x) Serial.println(F(x));
 #define pfire(x) {Serial.print(F("Firework {")); Serial.print(x.location); Serial.print(F(", ")); Serial.print(x.maxSpread); Serial.print(F(", ")); Serial.print(x.lifetime); Serial.print(F(", ")); Serial.print(x.hue); Serial.println("}");};
-#define prgb(c) {Serial.print("{"); Serial.print(c.r); Serial.print(","); Serial.print(c.g); Serial.print(","); Serial.print(c.b); Serial.print("}");};
 #define pmove(x) {Serial.print(F("MovingVertex {")); Serial.print(x.location); Serial.print(F(", ")); Serial.print(x.finalLocation); Serial.print(F(", ")); prgb(x.currentC); Serial.print(F(", ")); prgb(x.finalC); Serial.println(F("}"));};
 
 struct RGBRotateData {
-     byte speed;
-     float red;
-     float green;
-     float blue;
+    byte speed;
+    float red;
+    float green;
+    float blue;
 };
 
 struct RandomData {
-     byte speed;
+    byte speed;
 };
 
 struct DotData {
-     CRGB color;
-     CRGB secondaryColor;
-     byte speed;
-     float led;
-     uint16_t intled;
+    CRGB color;
+    CRGB secondaryColor;
+    byte speed;
+    float led;
+    uint16_t intled;
 };
 
 struct HSVPulseData {
-     byte hueRate;
-     byte pulseSpeed;
-     bool sinusoidalDimming;
-     byte pulseIntensity;
-     float h;
-     byte v;
-     byte other;
+    byte hueRate;
+    byte pulseSpeed;
+    bool sinusoidalDimming;
+    byte pulseIntensity;
+    float h;
+    byte v;
+    byte other;
 };
 
 struct SolidData {
-     CRGB color;
-     CRGB oldcolor;
+    CRGB color;
+    CRGB oldcolor;
 };
 
 struct PulseData {
-     CRGB color;
-     byte pulseSpeed;
-     bool sinusoidalDimming;
-     byte pulseIntensity;
-     byte i;
+    CRGB color;
+    byte pulseSpeed;
+    bool sinusoidalDimming;
+    byte pulseIntensity;
+    byte i;
 };
 
 struct PulseRandomData {
-     byte pulseSpeed;
-     bool sinusoidalDimming;
+    byte pulseSpeed;
+    bool sinusoidalDimming;
 };
 
 struct FireworksData {
-     byte fireworkCount;
-     byte oldfc;
-     Firework* fireworks;
+    byte fireworkCount;
+    byte oldfc;
+    Firework* fireworks;
 };
 
 struct WavesData {
-     byte speed;
-     byte waveCount;
-     boolean random;
-     byte colorsLength;
-     CRGB *colors;
-     MovingVertex *pts;
-     byte oldsize;
+    byte speed;
+    byte waveCount;
+    boolean random;
+    byte colorsLength;
+    CRGB *colors;
+    MovingVertex *pts;
+    byte oldsize;
 };
 
 struct ShiftData {
-     byte speed;
-     byte colorsLength;
-     CRGB *colors;
-     float i;
-     byte oldindex;
-     byte newindex;
+    byte speed;
+    byte transitionTime;
+    byte colorsLength;
+    CRGB *colors;
+    float i;
+    byte oldIndex;
+    byte newIndex;
 };
 
 struct BriansFunctionData {
-     CRGB color;
-     byte pulseSpeed;
-     byte pulseIntensity;
-     byte i;
+    CRGB color;
+    byte pulseSpeed;
+    byte pulseIntensity;
+    byte i;
 };
 
 struct BriansFunction2Data {
-     CRGB color;
-     CRGB color1;
-     CRGB color2;
-     CRGB color3;
-     byte i;
+    CRGB color;
+    CRGB color1;
+    CRGB color2;
+    CRGB color3;
+    byte i;
 };
 
 struct BriansFunctionStaticData {
-     byte i;
+    byte i;
 };
 
 union Data {
-     RGBRotateData rr;
-     RandomData r;
-     DotData d;
-     HSVPulseData hp;
-     SolidData s;
-     PulseData p;
-     PulseRandomData pr;
-     FireworksData f;
-     WavesData w;
-     ShiftData sh;
-     BriansFunctionData bf;
-     BriansFunction2Data bf2;
-     BriansFunctionStaticData bfs;
+    RGBRotateData rr;
+    RandomData r;
+    DotData d;
+    HSVPulseData hp;
+    SolidData s;
+    PulseData p;
+    PulseRandomData pr;
+    FireworksData f;
+    WavesData w;
+    ShiftData sh;
+    BriansFunctionData bf;
+    BriansFunction2Data bf2;
+    BriansFunctionStaticData bfs;
 } d;
 
 
@@ -182,14 +180,15 @@ void fillInArgs(Mode selected, ESP8266WebServer &server) {
         delete[] d.w.colors;
         d.w.colors = new CRGB[d.w.colorsLength]();
         for(byte i = 0; i < d.w.colorsLength; i++) { 
-            sprintf(nameBuff, "5s%d", i);
+            sprintf(nameBuff, "4s%d", i);
             server.arg(nameBuff).substring(1).toCharArray(buff, 7);
             d.w.colors[i] = CRGB(strtoul(buff, NULL, 16));
         }
         break;
     case SHIFT:
         d.sh.speed = (byte) server.arg("p0").toInt();
-        d.sh.colorsLength = (byte) server.arg("p1").toInt();
+        d.sh.transitionTime = (byte) server.arg("p1").toInt();
+        d.sh.colorsLength = (byte) server.arg("p2").toInt();
         delete[] d.sh.colors;
         d.sh.colors = new CRGB[d.sh.colorsLength]();
         for(byte i = 0; i < d.sh.colorsLength; i++) { 
@@ -275,13 +274,15 @@ const inputs = {\n\
                 'Pulse Random': ['<div>Pulse Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"1\" checked oninput=\"u();\"></div>',2],\n\
                 'Fireworks': ['<div>Firework Count: <input type=\"range\" id=\"0\" max=\"30\" value=\"1\" oninput=\"u();\"></div>',1],\n\
                 'Waves': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Wave Count: <input type=\"range\" id=\"1\" max=\"10\" value=\"1\" oninput=\"u();\"></div><div>Random: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'!3\\\',\\\'!4\\\']);u();\"></div><div>Colors Length: <input type=\"range\" id=\"3\" max=\"10\" value=\"2\" oninput=\"cVLA(3,4);u();\"></div><div id=\"4\"></div>',5,()=>{cIF(2,['!3','!4']);cVLA(3,4);}],\n\
-                'Shift': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Colors Length: <input type=\"range\" id=\"1\" max=\"255\" value=\"2\" oninput=\"cVLA(1,2);u();\"></div><div id=\"2\"></div>',3,()=>{cVLA(1,2);}],\n\
+                'Shift': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Transition Time: <input type=\"range\" id=\"1\" max=\"100\" value=\"33\" oninput=\"u();\"></div><div>Colors Length: <input type=\"range\" id=\"2\" max=\"10\" value=\"2\" oninput=\"cVLA(2,3);u();\"></div><div id=\"3\"></div>',4,()=>{cVLA(2,3);}],\n\
                 'Brians Function': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Pulse Intensity: <input type=\"range\" id=\"2\" max=\"255\" value=\"127\" oninput=\"cIF(2,[\\\'N2\\\']);u();\"></div>',3,()=>{cIF(2,['N2']);}],\n\
                 'Brians Function 2': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color1: <input type=\"color\" id=\"1\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color2: <input type=\"color\" id=\"2\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color3: <input type=\"color\" id=\"3\" value=\"#0000ff\" oninput=\"u();\"></div>',4],\n\
                 'Brians Function Static': ['',0],\n\
                 'Off': ['',0],\n\
 };\n\
-vlas['4'] = 'color';vlas['2'] = 'color';\n\
+vlas['4'] = 'color';\n\
+vlas['3'] = 'color';\n\
+\n\
 const s = document.getElementsByTagName('select')[0];\n\
 const cont = document.getElementById('s');\n\
 function change() {\n\
@@ -296,7 +297,9 @@ const oldLen = div.children.length;\n\
 const newLen = parseInt(slider.value);\n\
 if (oldLen < newLen)\n\
 for (let i = oldLen; i < newLen; i++) {\n\
-div.innerHTML += '<input type=\"' + vlas['' + divID] + '\" oninput=\"u()\">';\n\
+const t = document.createElement('template');\n\
+t.innerHTML = '<input type=\"' + vlas['' + divID] + '\" oninput=\"u()\">';\n\
+div.appendChild(t.content);\n\
 }\n\
 else while (div.children.length > newLen) {\n\
 div.removeChild(div.lastChild);\n\
@@ -391,7 +394,7 @@ void stringifyParams(Mode selected) {
         sprintf(spBuffer, "%i|%i|%i|%i|%i|", selected, d.w.speed, d.w.waveCount, d.w.random, d.w.colorsLength);
         break;
     case SHIFT:
-        sprintf(spBuffer, "%i|%i|%i|", selected, d.sh.speed, d.sh.colorsLength);
+        sprintf(spBuffer, "%i|%i|%i|%i|", selected, d.sh.speed, d.sh.transitionTime, d.sh.colorsLength);
         break;
     case BRIANS_FUNCTION:
         sprintf(spBuffer, "%i|#%02X%02X%02X|%i|%i", selected, d.bf.color.r, d.bf.color.g, d.bf.color.b, d.bf.pulseSpeed, d.bf.pulseIntensity);

@@ -16,7 +16,7 @@ def getStructVariableName(member):
         # See if there is a VLA command, if there is a create.
         member = member[0]
     splits = member.split(' ')
-    ret += '     ' + splits.pop(0) + ' '  # The type and a space
+    ret += s(1) + splits.pop(0) + ' '  # The type and a space
     return ret + convertToCamelCase(' '.join(splits))  # The first word, lower case.
 
 
@@ -64,12 +64,12 @@ def printl(arg):
     print(frame_info.f_back.f_lineno, ":", arg)
 
 
-def s(num):
+def s(num=1):
     return ' ' * (4 * num)
 
 
 def firstLowerLetter(string):
     ret = []
-    for s in string.split(' '):
-        ret.append(s[0:1].lower())
+    for splots in string.split(' '):
+        ret.append(splots[0:1].lower())
     return ''.join(ret)

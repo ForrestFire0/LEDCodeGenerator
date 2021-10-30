@@ -54,13 +54,15 @@ const inputs = {
                 'Pulse Random': ['<div>Pulse Speed: <input type="range" id="0" max="255" value="118" oninput="u();"></div><div>Sinusoidal Dimming: <input type="checkbox" id="1" checked oninput="u();"></div>',2],
                 'Fireworks': ['<div>Firework Count: <input type="range" id="0" max="30" value="1" oninput="u();"></div>',1],
                 'Waves': ['<div>Speed: <input type="range" id="0" max="255" value="118" oninput="u();"></div><div>Wave Count: <input type="range" id="1" max="10" value="1" oninput="u();"></div><div>Random: <input type="checkbox" id="2" checked oninput="cIF(2,[\'!3\',\'!4\']);u();"></div><div>Colors Length: <input type="range" id="3" max="10" value="2" oninput="cVLA(3,4);u();"></div><div id="4"></div>',5,()=>{cIF(2,['!3','!4']);cVLA(3,4);}],
-                'Shift': ['<div>Speed: <input type="range" id="0" max="255" value="118" oninput="u();"></div><div>Colors Length: <input type="range" id="1" max="255" value="2" oninput="cVLA(1,2);u();"></div><div id="2"></div>',3,()=>{cVLA(1,2);}],
+                'Shift': ['<div>Speed: <input type="range" id="0" max="255" value="118" oninput="u();"></div><div>Transition Time: <input type="range" id="1" max="100" value="33" oninput="u();"></div><div>Colors Length: <input type="range" id="2" max="10" value="2" oninput="cVLA(2,3);u();"></div><div id="3"></div>',4,()=>{cVLA(2,3);}],
                 'Brians Function': ['<div>Color: <input type="color" id="0" value="#0000ff" oninput="u();"></div><div>Pulse Speed: <input type="range" id="1" max="255" value="118" oninput="u();"></div><div>Pulse Intensity: <input type="range" id="2" max="255" value="127" oninput="cIF(2,[\'N2\']);u();"></div>',3,()=>{cIF(2,['N2']);}],
                 'Brians Function 2': ['<div>Color: <input type="color" id="0" value="#0000ff" oninput="u();"></div><div>Color1: <input type="color" id="1" value="#0000ff" oninput="u();"></div><div>Color2: <input type="color" id="2" value="#0000ff" oninput="u();"></div><div>Color3: <input type="color" id="3" value="#0000ff" oninput="u();"></div>',4],
                 'Brians Function Static': ['',0],
                 'Off': ['',0],
 };
-vlas['4'] = 'color';vlas['2'] = 'color';
+vlas['4'] = 'color';
+vlas['3'] = 'color';
+
 const s = document.getElementsByTagName('select')[0];
 const cont = document.getElementById('s');
 function change() {
@@ -75,7 +77,9 @@ const oldLen = div.children.length;
 const newLen = parseInt(slider.value);
 if (oldLen < newLen)
 for (let i = oldLen; i < newLen; i++) {
-div.innerHTML += '<input type="' + vlas['' + divID] + '" oninput="u()">';
+const t = document.createElement('template');
+t.innerHTML = '<input type="' + vlas['' + divID] + '" oninput="u()">';
+div.appendChild(t.content);
 }
 else while (div.children.length > newLen) {
 div.removeChild(div.lastChild);

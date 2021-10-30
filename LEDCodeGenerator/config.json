@@ -107,13 +107,14 @@
         "MovingVertex *pts",
         "byte oldsize"
       ],
-      "default": [118, 1, true],
+      "default": [50, 1, true],
       "max": {"1": 10}
     },
     {
       "name": "Shift",
       "um": [
         "byte Speed",
+        ["byte Transition Time", {"max":  100, "default": 33}],
         ["CRGB *Colors", {"VLA": {"index": "create", "max": 10, "default": 2}}]
       ],
       "im": [
@@ -165,10 +166,7 @@
   "insert": [
     "struct Firework {int location; byte maxSpread; int lifetime; byte hue;};",
     "struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};",
-    "#define pt(x) {Serial.print(F(#x \": \")); Serial.println(x);}",
-    "#define ps(x) Serial.println(F(x));",
     "#define pfire(x) {Serial.print(F(\"Firework {\")); Serial.print(x.location); Serial.print(F(\", \")); Serial.print(x.maxSpread); Serial.print(F(\", \")); Serial.print(x.lifetime); Serial.print(F(\", \")); Serial.print(x.hue); Serial.println(\"}\");};",
-    "#define prgb(c) {Serial.print(\"{\"); Serial.print(c.r); Serial.print(\",\"); Serial.print(c.g); Serial.print(\",\"); Serial.print(c.b); Serial.print(\"}\");};",
     "#define pmove(x) {Serial.print(F(\"MovingVertex {\")); Serial.print(x.location); Serial.print(F(\", \")); Serial.print(x.finalLocation); Serial.print(F(\", \")); prgb(x.currentC); Serial.print(F(\", \")); prgb(x.finalC); Serial.println(F(\"}\"));};"
   ]
 }

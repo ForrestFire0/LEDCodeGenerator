@@ -1,3 +1,4 @@
+#include <helpers.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
@@ -22,7 +23,7 @@
 unsigned long start;
 #undef timeevent(label)
 #undef start();
-#define timeevent(label) {Serial.print(label ": "); Serial.println(micros()-start); start = micros();}
+#define timeevent(label) {p(label ": "); Serial.println(micros()-start); start = micros();}
 #define start() {start = micros();}
 #endif
 
@@ -36,35 +37,42 @@ ESP8266WebServer server(80);
 
 unsigned long lastRunTime;
 
-void handleRoot() {
-    server.send(200, F("text/html"), HTMLTemplate);
-    Serial.println(F("Responding and sending"));
-}
-
 void setup(void) {
     Serial.begin(115200);
-    Serial.println("Starting program!");
+    psl("Starting program!");
     startSelected();
 #ifdef ENABLE_WIFI
-    //    WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
-    //Wait for connection
+//    IPAddress local_IP(10,108,64,223);
+//    IPAddress gateway(10, 108, 0, 1);
+//    IPAddress subnet(255, 255, 128, 0);
+//        if (!WiFi.config(local_IP, gateway, subnet)) {
+//            Serial.println("STA Failed to configure");
+//            setAll(CRGB::Green);
+//            FastLED.show();
+//            delay(500);
+//            setAll(CRGB::Black);
+//            FastLED.show();
+//        }
     startLEDs();
 #endif
-    server.on("/", handleRoot);
+    server.on("/", []() {
+        server.send(200, F("text/html"), HTMLTemplate);
+        psl("Responding and sending");
+    });
     server.on("/set", []() {
         Mode oldSelected = selected;
         selected = (Mode) server.arg(0).toInt();
         if (selected != oldSelected) {
             endSelected(oldSelected);
-            Serial.print(F("Set mode: "));
-            Serial.println(LEDOptions[(byte) selected]);
+            ps("Set mode: ");
+            pl(LEDOptions[(byte) selected]);
             startSelected();
         }
-        Serial.println("Set parameters:");
+        ps("Set parameters:");
         fillInArgs(selected, server);
         stringifyParams(selected);
-        Serial.println(spBuffer);
+        pl(spBuffer);
         server.send(200, F("text/plain"), F("Done!"));
     });
 
@@ -75,16 +83,16 @@ void setup(void) {
 
     server.on("/gc", []() {
         stringifyParams(selected);
-        Serial.println(spBuffer);
+        //        Serial.println(spBuffer);
         server.send(200, F("text/plain"), spBuffer);
     });
 
 #ifdef ENABLE_WIFI
     server.begin();
 #endif
-    Serial.print(F("Connected to "));
+    p(F("Connected to "));
     Serial.println(ssid);
-    Serial.print(F("Server starting on: "));
+    p(F("Server starting on: "));
     Serial.println(WiFi.localIP());
     runInitLEDS();
 }
