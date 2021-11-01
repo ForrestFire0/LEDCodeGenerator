@@ -22,14 +22,16 @@ def getStructVariableName(member):
 
 def getSetter(input_type, name, i, indent=2):
     ret = ''
-    if input_type == "range":
-        ret += indent * '    ' + name + ' = (byte) server.arg(' + i + ').toInt();\n'
-    if input_type == "color":
+    if input_type == 'range':
+        ret += s(indent) + name + ' = (byte) server.arg(' + i + ').toInt();\n'
+    if input_type == 'color':
         # First, we have to generate a char array with the 6 character html string.
-        ret += indent * '    ' + 'server.arg(' + i + ').substring(1).toCharArray(buff, 7);\n'
-        ret += indent * '    ' + name + ' = CRGB(strtoul(buff, NULL, 16));\n'
+        ret += s(indent) + 'server.arg(' + i + ').substring(1).toCharArray(buff, 7);\n'
+        ret += s(indent) + name + ' = CRGB(strtoul(buff, NULL, 16));\n'
     if input_type == 'checkbox':
-        ret += indent * '    ' + name + ' = server.arg(' + i + ').equals("true");\n'
+        ret += s(indent) + name + ' = server.arg(' + i + ').equals("true");\n'
+    if input_type == 'select':
+        ret += s(indent) + name + ' = server.arg(' + i + ').toInt();\n'
     return ret
 
 

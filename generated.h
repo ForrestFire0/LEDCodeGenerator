@@ -8,14 +8,12 @@
 //Fireworks -> f
 //Waves -> w
 //Shift -> sh
-//Brians Function -> bf
-//Brians Function 2 -> bf2
-//Brians Function Static -> bfs
 //Off -> o
 struct Firework {int location; byte maxSpread; int lifetime; byte hue;};
 struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};
 #define pfire(x) {Serial.print(F("Firework {")); Serial.print(x.location); Serial.print(F(", ")); Serial.print(x.maxSpread); Serial.print(F(", ")); Serial.print(x.lifetime); Serial.print(F(", ")); Serial.print(x.hue); Serial.println("}");};
 #define pmove(x) {Serial.print(F("MovingVertex {")); Serial.print(x.location); Serial.print(F(", ")); Serial.print(x.finalLocation); Serial.print(F(", ")); prgb(x.currentC); Serial.print(F(", ")); prgb(x.finalC); Serial.println(F("}"));};
+enum class Off_PlaybackMode {MODE_1,MODE_2,MODE_3};
 
 struct RGBRotateData {
     byte speed;
@@ -90,23 +88,8 @@ struct ShiftData {
     byte newIndex;
 };
 
-struct BriansFunctionData {
-    CRGB color;
-    byte pulseSpeed;
-    byte pulseIntensity;
-    byte i;
-};
-
-struct BriansFunction2Data {
-    CRGB color;
-    CRGB color1;
-    CRGB color2;
-    CRGB color3;
-    byte i;
-};
-
-struct BriansFunctionStaticData {
-    byte i;
+struct OffData {
+    select playbackMode;
 };
 
 union Data {
@@ -120,15 +103,13 @@ union Data {
     FireworksData f;
     WavesData w;
     ShiftData sh;
-    BriansFunctionData bf;
-    BriansFunction2Data bf2;
-    BriansFunctionStaticData bfs;
+    OffData o;
 } d;
 
 
 //**LEDOptions**
-char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Waves", "Shift", "Brians Function", "Brians Function 2", "Brians Function Static", "Off"};
-enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, WAVES, SHIFT, BRIANS_FUNCTION, BRIANS_FUNCTION_2, BRIANS_FUNCTION_STATIC, OFF};
+char *LEDOptions[] = {"RGB Rotate", "Random", "Dot", "HSV Pulse", "Solid", "Pulse", "Pulse Random", "Fireworks", "Waves", "Shift", "Off"};
+enum Mode {RGB_ROTATE, RANDOM, DOT, HSV_PULSE, SOLID, PULSE, PULSE_RANDOM, FIREWORKS, WAVES, SHIFT, OFF};
 
 //**SETTERS CODE**
 void fillInArgs(Mode selected, ESP8266WebServer &server) {
@@ -197,21 +178,8 @@ void fillInArgs(Mode selected, ESP8266WebServer &server) {
             d.sh.colors[i] = CRGB(strtoul(buff, NULL, 16));
         }
         break;
-    case BRIANS_FUNCTION:
-        server.arg("p0").substring(1).toCharArray(buff, 7);
-        d.bf.color = CRGB(strtoul(buff, NULL, 16));
-        d.bf.pulseSpeed = (byte) server.arg("p1").toInt();
-        d.bf.pulseIntensity = (byte) server.arg("p2").toInt();
-        break;
-    case BRIANS_FUNCTION_2:
-        server.arg("p0").substring(1).toCharArray(buff, 7);
-        d.bf2.color = CRGB(strtoul(buff, NULL, 16));
-        server.arg("p1").substring(1).toCharArray(buff, 7);
-        d.bf2.color1 = CRGB(strtoul(buff, NULL, 16));
-        server.arg("p2").substring(1).toCharArray(buff, 7);
-        d.bf2.color2 = CRGB(strtoul(buff, NULL, 16));
-        server.arg("p3").substring(1).toCharArray(buff, 7);
-        d.bf2.color3 = CRGB(strtoul(buff, NULL, 16));
+    case OFF:
+        d.o.playbackMode = server.arg("p0").toInt();
         break;
      }
 }
@@ -225,24 +193,11 @@ char HTMLTemplate[] = "<!DOCTYPE html>\n\
 <title>LED Controller</title>\n\
 <link href='https://fonts.googleapis.com/css2?family=Comfortaa&display=swap' rel='stylesheet'>\n\
 <style>\n\
-body {\n\
-font-family: 'Comfortaa', cursive;\n\
-background-color: #cccccc;\n\
-Color: #000088;\n\
-}\n\
-h1 {\n\
-font-size: 10vw;\n\
-margin-top: 1vw;\n\
-margin-bottom: 1vw;\n\
-}\n\
-h3 {\n\
-font-size: 6vw;\n\
-margin-bottom: 1vw;\n\
-}\n\
-select {\n\
-width: min(75vw, 600px);\n\
-font-size: min(6vw, 30px);\n\
-}\n\
+body {font-family: 'Comfortaa', cursive;background-color: #cccccc;Color: #000088;}\n\
+h1 {font-size: 10vw;margin-top: 1vw;margin-bottom: 1vw;}\n\
+h3 {font-size: 6vw;margin-bottom: 1vw;}\n\
+.big-boy {width: min(75vw, 600px);font-size: min(6vw, 30px);}\n\
+div {margin: 5px;}\n\
 </style>\n\
 </head>\n\
 <body>\n\
@@ -251,8 +206,8 @@ font-size: min(6vw, 30px);\n\
 <center>\n\
 <h2 id=\"loading\">LOADING...</h2>\n\
 <label>\n\
-<select onchange='change()'>\n\
-<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Shift</option><option value='10'>Brians Function</option><option value='11'>Brians Function 2</option><option value='12'>Brians Function Static</option><option value='13'>Off</option>\
+<select onchange='change()' class=\"big-boy\">\n\
+<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Shift</option><option value='10'>Off</option>\
 </select>\n\
 </label>\n\
 <div style='margin-bottom: 3vh' id='s'></div>\n\
@@ -265,20 +220,17 @@ const vlas = {};\n\
 setInterval(send, 200);\n\
 setInterval(getFPS, 2000);\n\
 const inputs = {\n\
-                'RGB Rotate': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div>',1],\n\
-                'Random': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"100\" oninput=\"u();\"></div>',1],\n\
-                'Dot': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#ff0000\" oninput=\"u();\"></div><div>Secondary Color: <input type=\"color\" id=\"1\" value=\"#000000\" oninput=\"u();\"></div><div>Speed: <input type=\"range\" id=\"2\" max=\"255\" value=\"118\" oninput=\"u();\"></div>',3],\n\
-                'HSV Pulse': ['<div>Hue Rate: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'N3\\\']);u();\"></div><div>Pulse Intensity: <input type=\"range\" id=\"3\" max=\"255\" value=\"172\" oninput=\"u();\"></div>',4,()=>{cIF(2,['N3']);}],\n\
-                'Solid': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0f0f0f\" oninput=\"u();\"></div>',1],\n\
-                'Pulse': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'N3\\\']);u();\"></div><div>Pulse Intensity: <input type=\"range\" id=\"3\" max=\"255\" value=\"127\" oninput=\"u();\"></div>',4,()=>{cIF(2,['N3']);}],\n\
-                'Pulse Random': ['<div>Pulse Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"1\" checked oninput=\"u();\"></div>',2],\n\
-                'Fireworks': ['<div>Firework Count: <input type=\"range\" id=\"0\" max=\"30\" value=\"1\" oninput=\"u();\"></div>',1],\n\
-                'Waves': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Wave Count: <input type=\"range\" id=\"1\" max=\"10\" value=\"1\" oninput=\"u();\"></div><div>Random: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'!3\\\',\\\'!4\\\']);u();\"></div><div>Colors Length: <input type=\"range\" id=\"3\" max=\"10\" value=\"2\" oninput=\"cVLA(3,4);u();\"></div><div id=\"4\"></div>',5,()=>{cIF(2,['!3','!4']);cVLA(3,4);}],\n\
-                'Shift': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Transition Time: <input type=\"range\" id=\"1\" max=\"100\" value=\"33\" oninput=\"u();\"></div><div>Colors Length: <input type=\"range\" id=\"2\" max=\"10\" value=\"2\" oninput=\"cVLA(2,3);u();\"></div><div id=\"3\"></div>',4,()=>{cVLA(2,3);}],\n\
-                'Brians Function': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Pulse Intensity: <input type=\"range\" id=\"2\" max=\"255\" value=\"127\" oninput=\"cIF(2,[\\\'N2\\\']);u();\"></div>',3,()=>{cIF(2,['N2']);}],\n\
-                'Brians Function 2': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color1: <input type=\"color\" id=\"1\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color2: <input type=\"color\" id=\"2\" value=\"#0000ff\" oninput=\"u();\"></div><div>Color3: <input type=\"color\" id=\"3\" value=\"#0000ff\" oninput=\"u();\"></div>',4],\n\
-                'Brians Function Static': ['',0],\n\
-                'Off': ['',0],\n\
+'RGB Rotate': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div>',1],\n\
+'Random': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"100\" oninput=\"u();\"></div>',1],\n\
+'Dot': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#ff0000\" oninput=\"u();\"></div><div>Secondary Color: <input type=\"color\" id=\"1\" value=\"#000000\" oninput=\"u();\"></div><div>Speed: <input type=\"range\" id=\"2\" max=\"255\" value=\"118\" oninput=\"u();\"></div>',3],\n\
+'HSV Pulse': ['<div>Hue Rate: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'N3\\\']);u();\"></div><div>Pulse Intensity: <input type=\"range\" id=\"3\" max=\"255\" value=\"172\" oninput=\"u();\"></div>',4,()=>{cIF(2,['N3']);}],\n\
+'Solid': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0f0f0f\" oninput=\"u();\"></div>',1],\n\
+'Pulse': ['<div>Color: <input type=\"color\" id=\"0\" value=\"#0000ff\" oninput=\"u();\"></div><div>Pulse Speed: <input type=\"range\" id=\"1\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'N3\\\']);u();\"></div><div>Pulse Intensity: <input type=\"range\" id=\"3\" max=\"255\" value=\"127\" oninput=\"u();\"></div>',4,()=>{cIF(2,['N3']);}],\n\
+'Pulse Random': ['<div>Pulse Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Sinusoidal Dimming: <input type=\"checkbox\" id=\"1\" checked oninput=\"u();\"></div>',2],\n\
+'Fireworks': ['<div>Firework Count: <input type=\"range\" id=\"0\" max=\"30\" value=\"1\" oninput=\"u();\"></div>',1],\n\
+'Waves': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"50\" oninput=\"u();\"></div><div>Wave Count: <input type=\"range\" id=\"1\" max=\"10\" value=\"1\" oninput=\"u();\"></div><div>Random: <input type=\"checkbox\" id=\"2\" checked oninput=\"cIF(2,[\\\'!3\\\',\\\'!4\\\']);u();\"></div><div>Colors Length: <input type=\"range\" id=\"3\" max=\"10\" value=\"2\" oninput=\"cVLA(3,4);u();\"></div><div id=\"4\"></div>',5,()=>{cIF(2,['!3','!4']);cVLA(3,4);}],\n\
+'Shift': ['<div>Speed: <input type=\"range\" id=\"0\" max=\"255\" value=\"118\" oninput=\"u();\"></div><div>Transition Time: <input type=\"range\" id=\"1\" max=\"100\" value=\"33\" oninput=\"u();\"></div><div>Colors Length: <input type=\"range\" id=\"2\" max=\"10\" value=\"2\" oninput=\"cVLA(2,3);u();\"></div><div id=\"3\"></div>',4,()=>{cVLA(2,3);}],\n\
+'Off': ['<div>Playback Mode: <select id=\"0\" oninput=\"u();\"><option value=\"0\">Mode 1</option><option value=\"1\">Mode 2</option><option value=\"2\">Mode 3</option></select></div>',1],\n\
 };\n\
 vlas['4'] = 'color';\n\
 vlas['3'] = 'color';\n\
@@ -323,7 +275,10 @@ xhr.send(null);\n\
 }\n\
 function getFPS() {\n\
 request('/gt', (res) => {\n\
+if (!isNaN(parseFloat(res).toFixed(2)))\n\
 document.getElementById('fps').innerHTML = parseFloat(res).toFixed(2) + \" fps\";\n\
+else\n\
+document.getElementById('fps').innerHTML = 'Couldn\\\'t connect to the server. Could the ESP8266 be off?';\n\
 });\n\
 }\n\
 request('/gc', (res) => {\n\
@@ -363,7 +318,7 @@ newData = false;\n\
 </html>\n";
 
 //**STRINGIFY PARAMS**
-char spBuffer[53];
+char spBuffer[22];
 void stringifyParams(Mode selected) {
     switch (selected) {
     case RGB_ROTATE:
@@ -396,17 +351,8 @@ void stringifyParams(Mode selected) {
     case SHIFT:
         sprintf(spBuffer, "%i|%i|%i|%i|", selected, d.sh.speed, d.sh.transitionTime, d.sh.colorsLength);
         break;
-    case BRIANS_FUNCTION:
-        sprintf(spBuffer, "%i|#%02X%02X%02X|%i|%i", selected, d.bf.color.r, d.bf.color.g, d.bf.color.b, d.bf.pulseSpeed, d.bf.pulseIntensity);
-        break;
-    case BRIANS_FUNCTION_2:
-        sprintf(spBuffer, "%i|#%02X%02X%02X|#%02X%02X%02X|#%02X%02X%02X|#%02X%02X%02X", selected, d.bf2.color.r, d.bf2.color.g, d.bf2.color.b, d.bf2.color1.r, d.bf2.color1.g, d.bf2.color1.b, d.bf2.color2.r, d.bf2.color2.g, d.bf2.color2.b, d.bf2.color3.r, d.bf2.color3.g, d.bf2.color3.b);
-        break;
-    case BRIANS_FUNCTION_STATIC:
-        sprintf(spBuffer, "%i", selected);
-        break;
     case OFF:
-        sprintf(spBuffer, "%i", selected);
+        sprintf(spBuffer, "%i|%i", selected);
         break;
     }
 }

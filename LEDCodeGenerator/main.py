@@ -2,6 +2,7 @@ import json
 import os
 
 from data import *
+from htmlelement import *
 
 debug_setters = False
 update_temp = True
@@ -37,35 +38,36 @@ def generateHTMLCode():
     ret = 'const inputs = {\n'
     for mode in data['modes']:
         onselect = []
-        ret += s(4) + '\'' + mode['name'] + '\': [\''
+        ret += '\'' + mode['name'] + '\': [\''
         if mode.get('um'):
             for i, member in enumerate(mode.get('um')):
                 vla = member[1].get('VLA')
-                if not vla:
-                    ret += f'<div>{member[1]["visible_name"]}: <input type="{member[1]["html_type"]}" id="{i}"'
+                if vla:
+                    # We have a VLA. The contents of the vla will be generated when the slider moves. The slider will
+                    ret += stringifyE(makeHTMLE('div', id=i))
+                    default_element = member[1]['html_tag']
+                    vla_code.append(f'vlas[\'{i}\'] = \'{default_element}\';\n')
+                else:
+                    outer_div = makeHTMLE('div')
+                    if member[1]['shell_element'] == 'input':
+                        input_e = makeHTMLE('input', type=member[1]['html_tag'], id=i)
+                    else:
+                        input_e = makeHTMLE(member[1]['html_tag'], id=i)
+                    # ret += f"<div>{member[1]['visible_name']}: {member[1]['html_start']}\" id=\"{i}\""
                     # If it is a range, it might have a max. Set it.
-                    try:
-                        if member[1]["html_type"] == 'range':
-                            ret += ' max="' + str(member[1].get('max')) + '"'
-                    except (KeyError, IndexError):
-                        printl(
-                            "Fail: Member \"" + member[1]["visible_name"] + "\" has no default max in mode \"" + mode[
-                                'name'] +
-                            "\". Add one to continue.")
-                        exit(-1)
+                    if member[1]["html_tag"] == 'range':
+                        input_e['max'] = member[1].get('max')
                     # it might have a default value
-                    try:
-                        if member[1]["html_type"] == 'color' or member[1]["html_type"] == 'range':
-                            ret += ' value="' + str(member[1]['default']) + '"'
-                        if member[1]["html_type"] == 'checkbox':
-                            if member[1]['default']:
-                                ret += ' checked'
-                    except (KeyError, IndexError):
-                        printl(
-                            "Fail: Member \"" + member[1]["visible_name"] + "\" has no default parameter in mode \"" +
-                            mode[
-                                'name'] + "\". Add one to continue.")
-                        exit(-1)
+                    if member[1]["html_tag"] == 'color' or member[1]["html_tag"] == 'range':
+                        input_e['value'] = member[1]['default']
+                    if member[1]["html_tag"] == 'checkbox':
+                        if member[1]['default']:
+                            input_e['checked'] = ''
+
+                    if member[1]['shell_element'] == 'select':
+                        for idx, opt in enumerate(member[1]['options']):
+                            input_e['content'] += stringifyE(makeHTMLE('option', content=opt, value=idx))
+
                     oninput = ["u();"]
                     if member[1].get('VLA4'):
                         vlaID = member[1].get('VLA4')
@@ -75,13 +77,9 @@ def generateHTMLCode():
                         ifIDs = member[1].get('if4')
                         oninput.insert(0, f"cIF({i},[{','.join(ifIDs)}]);")
                         onselect.append(f"cIF({i},[{','.join(ifIDs)}]);")
-
-                    ret += f' oninput="{"".join(oninput)}"></div>'
-                else:
-                    # We have a VLA. The contents of the vla will be generated when the slider moves. The slider will
-                    ret += '<div id=\"' + str(i) + '\"></div>'
-                    default_element = member[1]["html_type"]
-                    vla_code.append(f'vlas[\'{i}\'] = \'{default_element}\';\n')
+                    input_e['oninput'] = ''.join(oninput)
+                    outer_div['content'] = member[1]['visible_name'] + ': ' + stringifyE(input_e)
+                    ret += stringifyE(outer_div)
         ons = ''
         if len(onselect) > 0:
             ons = f',()=>{{{"".join(onselect)}}}'.replace("\\'", "'")
@@ -112,7 +110,7 @@ def generateSettersCode():
                         'type'] + '[' + vla_len_name + ']();\n'
                     ret += getForLoop(vla_len_name)
                     ret += s(3) + f'sprintf(nameBuff, "{i}s%d", i);\n'
-                    ret += getSetter(member[1]['html_type'], member[1]["member_name"] + '[i]', 'nameBuff',
+                    ret += getSetter(member[1]['html_tag'], member[1]["member_name"] + '[i]', 'nameBuff',
                                      3) + '        }\n'
                     printl('Reminder: Add "delete[] ' + member[1]['member_name'] + ';" to the end code of ' + mode[
                         'name'] + ' mode.')
@@ -125,7 +123,7 @@ def generateSettersCode():
                         ret += s(3) + member[1]['printable'](member[1]['member_name'] + '[i]') + '\n'
                         ret += s(2) + '}\n'
                 else:
-                    ret += getSetter(member[1]['html_type'], member[1]['member_name'], f'"p{i}"')
+                    ret += getSetter(member[1]['html_tag'], member[1]['member_name'], f'"p{i}"')
                     if debug_setters:
                         ret += s(2) + f'Serial.print("{member[1]["member_name"]}: ");\n'
                         ret += s(2) + member[1]['printable'](member[1]["member_name"]) + '\n'
@@ -189,9 +187,9 @@ def generateStringifyParams():
                 if vla is None:
                     thisSize += 1 + member[1]['html_input_string_size']
                     ret += member[1]['html_input_format'] + '|'
-                    if member[1]["html_type"] == "range" or member[1]["html_type"] == 'checkbox':
+                    if member[1]["html_tag"] == "range" or member[1]["html_tag"] == 'checkbox':
                         arguments.append(member[1]['member_name'])
-                    if member[1]["html_type"] == "color":
+                    if member[1]["html_tag"] == "color":
                         # First, we have to generate a char array with the 6 character html string.
                         arguments.append(member[1]['member_name'] + ".r")
                         arguments.append(member[1]['member_name'] + ".g")
@@ -252,7 +250,10 @@ if __name__ == '__main__':
                         else:
                             me[1]['max'] = 255
                     if not me[1].get('default'):
-                        me[1]['default'] = m['default'][index]
+                        if m.get('default') and index < len(m.get('default')):
+                            me[1]['default'] = m['default'][index]
+                        else:
+                            me[1]['default'] = 0
     # Look for and create IF dependencies.
     for m in data['modes']:
         if m.get('um'):
@@ -269,6 +270,25 @@ if __name__ == '__main__':
                     if not m['um'][int(ifd)][1].get('if4'):
                         m['um'][int(ifd)][1]['if4'] = []
                     m['um'][int(ifd)][1]['if4'].append(f'\\\'{r}{index}\\\'')
+    # Look for and create Select classes.
+    for m in data['modes']:
+        if m.get('um'):
+            for index, me in enumerate(m.get('um')):
+                if me[0].split(' ')[0].lower() == "select":
+                    me[0] = 's' + me[0][1:]
+                    # Ok so we need to create the class for each enum and add it to the list of things to insert
+                    me[1]['select_class'] = f"{m['classname']}_{''.join(me[0].split(' ')[1:])}"
+                    options = []
+                    for i, o in enumerate(me[1]['options']):
+                        if o.isdecimal():
+                            printl(
+                                f'Error: The option {o} in the mode {m["classname"]} in the select {" ".join(me[0].split(" ")[1:])} only consits of numbers. (Index {index})')
+                            exit(-1)
+                        options.append(o.upper().replace(' ', '_'))
+                    me[1]['options_class_members'] = options
+                    class_string = f"enum class {me[1]['select_class']} {{{','.join(options)}}};"
+                    data['insert'].append(class_string)
+
     for m in data['modes']:
         if m.get('um'):
             for index, me in enumerate(m.get('um')):
@@ -277,13 +297,15 @@ if __name__ == '__main__':
                 me[1]['member_name'] = 'd.' + m['v_name'] + '.' + me[1]['variable_name']
                 me[1]['visible_name'] = ' '.join(me[0].split(' ')[1:]).replace('*', '')
 
-                me[1]['html_type'], me[1]['html_input_format'], me[1]['html_input_string_size'] = {
-                    'CRGB': ("color", '#%02X%02X%02X', 12),
-                    'byte': ("range", '%i', 3),
-                    'bool': ("checkbox", '%i', 1),
-                    'boolean': ("checkbox", '%i', 1)
+                me[1]['html_tag'], me[1]['shell_element'], me[1]['html_input_format'], me[1]['html_input_string_size'] = {
+                    'CRGB':    ('color',    'input',  '#%02X%02X%02X', 7),
+                    'byte':    ('range',    'input',  '%i', 4),
+                    'bool':    ('checkbox', 'input',  '%i', 1),
+                    'boolean': ('checkbox', 'input',  '%i', 1),
+                    'select': ('select',    'select', '%i', 1)
                 }[me[1]['type']]
-                if me[1]['type'] == "CRGB":  # Specify types that need to be printed in a differnt way here.
+                # Specify types that need to be printed (when debug_setters is true) in a different way here.
+                if me[1]['type'] == "CRGB":
                     me[1]['printable'] = lambda name: f'prgbl({name});'
                 else:  # This is for types the Serial.println can take by default.
                     me[1]['printable'] = lambda name: f"Serial.println({name});"

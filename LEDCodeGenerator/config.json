@@ -125,42 +125,10 @@
       "default": [118]
     },
     {
-      "name": "Brians Function",
+      "name": "Off",
       "um": [
-        "CRGB Color",
-        "byte Pulse Speed",
-        ["byte Pulse Intensity", {"if": "2"}]
-      ],
-      "im": [
-        "byte i"
-      ],
-      "default": ["#0000ff", "118", "127"]
-    },
-      {
-      "name": "Brians Function 2",
-      "um": [
-        "CRGB Color",
-        "CRGB Color1",
-        "CRGB Color2",
-        "CRGB Color3"
-      ],
-      "im": [
-        "byte i"
-      ],
-      "default": ["#0000ff", "#0000ff","#0000ff","#0000ff"]
-    },
-    {
-      "name": "Brians Function Static",
-      "um": [
-
-      ],
-      "im": [
-        "byte i"
-      ],
-      "default": ["#0000ff", "118", "127"]
-    },
-    {
-      "name": "Off"
+        ["Select Playback Mode", {"options": ["Mode 1", "Mode 2", "Mode 3"], "default": "Mode 1"}]
+      ]
     }
   ],
   "insert": [
