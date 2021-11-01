@@ -290,26 +290,6 @@ void runLEDs() {
         case OFF:
             needWrite = false;
             break;
-        case BRIANS_FUNCTION:
-            ChangePalettePeriodically();
-            static uint8_t startIndex = 0;
-            startIndex = startIndex + 1; /* motion speed */
-            FillLEDsFromPaletteColors( startIndex);
-            break;
-        case BRIANS_FUNCTION_2:
-            currentBlending = LINEARBLEND;
-            startIndex = 0;
-            startIndex = startIndex + 1; /* motion speed */
-            currentPalette = ForestColors_p;
-            FillLEDsFromPaletteColors(startIndex);
-            break;
-        case BRIANS_FUNCTION_STATIC:
-            currentBlending = LINEARBLEND;
-            startIndex = 0;
-            startIndex = startIndex + 1; /* motion speed */
-            currentPalette = OceanColors_p;
-            FillLEDsFromPaletteColors(startIndex);
-            break;
     }
     if (!needWrite) return;
     if (needFlip) {

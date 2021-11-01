@@ -13,7 +13,7 @@ struct Firework {int location; byte maxSpread; int lifetime; byte hue;};
 struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};
 #define pfire(x) {Serial.print(F("Firework {")); Serial.print(x.location); Serial.print(F(", ")); Serial.print(x.maxSpread); Serial.print(F(", ")); Serial.print(x.lifetime); Serial.print(F(", ")); Serial.print(x.hue); Serial.println("}");};
 #define pmove(x) {Serial.print(F("MovingVertex {")); Serial.print(x.location); Serial.print(F(", ")); Serial.print(x.finalLocation); Serial.print(F(", ")); prgb(x.currentC); Serial.print(F(", ")); prgb(x.finalC); Serial.println(F("}"));};
-enum class Off_PlaybackMode {MODE_1,MODE_2,MODE_3};
+enum class Off_PlaybackMode {Mode_1,Mode_2,Mode_3};
 
 struct RGBRotateData {
     byte speed;
@@ -89,7 +89,7 @@ struct ShiftData {
 };
 
 struct OffData {
-    select playbackMode;
+    Off_PlaybackMode playbackMode;
 };
 
 union Data {
@@ -179,7 +179,7 @@ void fillInArgs(Mode selected, ESP8266WebServer &server) {
         }
         break;
     case OFF:
-        d.o.playbackMode = server.arg("p0").toInt();
+        d.o.playbackMode = (Off_PlaybackMode) server.arg("p0").toInt();
         break;
      }
 }
@@ -270,15 +270,14 @@ e.style.display = ch ? \"block\" : \"none\";\n\
 function request(url, onload) {\n\
 let xhr = new XMLHttpRequest();\n\
 xhr.onload = () => onload(xhr.responseText);\n\
+xhr.onerror = () => document.getElementById('fps').innerHTML = 'Couldn\\\'t connect to the server. Could the ESP8266 be off?';\n\
 xhr.open('GET', url, true);\n\
 xhr.send(null);\n\
 }\n\
 function getFPS() {\n\
 request('/gt', (res) => {\n\
-if (!isNaN(parseFloat(res).toFixed(2)))\n\
+if (!isNaN(parseFloat(res)))\n\
 document.getElementById('fps').innerHTML = parseFloat(res).toFixed(2) + \" fps\";\n\
-else\n\
-document.getElementById('fps').innerHTML = 'Couldn\\\'t connect to the server. Could the ESP8266 be off?';\n\
 });\n\
 }\n\
 request('/gc', (res) => {\n\

@@ -110,7 +110,7 @@ def generateSettersCode():
                         'type'] + '[' + vla_len_name + ']();\n'
                     ret += getForLoop(vla_len_name)
                     ret += s(3) + f'sprintf(nameBuff, "{i}s%d", i);\n'
-                    ret += getSetter(member[1]['html_tag'], member[1]["member_name"] + '[i]', 'nameBuff',
+                    ret += getSetter(member, member[1]["member_name"] + '[i]', 'nameBuff',
                                      3) + '        }\n'
                     printl('Reminder: Add "delete[] ' + member[1]['member_name'] + ';" to the end code of ' + mode[
                         'name'] + ' mode.')
@@ -123,7 +123,7 @@ def generateSettersCode():
                         ret += s(3) + member[1]['printable'](member[1]['member_name'] + '[i]') + '\n'
                         ret += s(2) + '}\n'
                 else:
-                    ret += getSetter(member[1]['html_tag'], member[1]['member_name'], f'"p{i}"')
+                    ret += getSetter(member, member[1]['member_name'], f'"p{i}"')
                     if debug_setters:
                         ret += s(2) + f'Serial.print("{member[1]["member_name"]}: ");\n'
                         ret += s(2) + member[1]['printable'](member[1]["member_name"]) + '\n'
@@ -284,7 +284,7 @@ if __name__ == '__main__':
                             printl(
                                 f'Error: The option {o} in the mode {m["classname"]} in the select {" ".join(me[0].split(" ")[1:])} only consits of numbers. (Index {index})')
                             exit(-1)
-                        options.append(o.upper().replace(' ', '_'))
+                        options.append(o.replace(' ', '_'))
                     me[1]['options_class_members'] = options
                     class_string = f"enum class {me[1]['select_class']} {{{','.join(options)}}};"
                     data['insert'].append(class_string)

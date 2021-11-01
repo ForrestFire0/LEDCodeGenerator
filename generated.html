@@ -82,15 +82,14 @@ e.style.display = ch ? "block" : "none";
 function request(url, onload) {
 let xhr = new XMLHttpRequest();
 xhr.onload = () => onload(xhr.responseText);
+xhr.onerror = () => document.getElementById('fps').innerHTML = 'Couldn\'t connect to the server. Could the ESP8266 be off?';
 xhr.open('GET', url, true);
 xhr.send(null);
 }
 function getFPS() {
 request('/gt', (res) => {
-if (!isNaN(parseFloat(res).toFixed(2)))
+if (!isNaN(parseFloat(res)))
 document.getElementById('fps').innerHTML = parseFloat(res).toFixed(2) + " fps";
-else
-document.getElementById('fps').innerHTML = 'Couldn\'t connect to the server. Could the ESP8266 be off?';
 });
 }
 request('/gc', (res) => {
