@@ -206,7 +206,7 @@ def generateStringifyParams():
 
 
 if __name__ == '__main__':
-    data = json.load(open("config.json"))
+    data = json.load(open("./LEDCodeGenerator/config.json"))
     fileout = open(os.path.dirname(__file__) + '/../generated.h', 'w+')
     fileout.truncate(0)
     used_names = []
