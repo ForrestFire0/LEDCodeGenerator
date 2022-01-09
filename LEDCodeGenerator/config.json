@@ -162,14 +162,15 @@
       "name": "Music",
       "um": [
         "CRGB Color",
+        "bool Random Color",
         ["byte Time Delay",{"max":  100, "default": 10}],
-        ["byte Max",{"max": 103,"default": 10}],
-        "bool Random Color"
+        ["byte Max",{"max": 100,"default": 10}]
+        
              ],
       "im": [
         "byte i"
       ],
-      "default": ["#ff0000"]
+      "default": ["#ff0000",false]
     },
         {
       "name": "Theatre Chase",
