@@ -1,4 +1,4 @@
-#include <helpers.h>
+    
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
@@ -9,9 +9,12 @@
     Todo:
     - make a "custom" with a sort of all included - change all sorts of things based on all sorts of different functions (aka, value set to sin, brightness set to abs, of time variable, with x scaling as well.
 */
+//
+//#define STASSID "umd-iot"
+//#define STAPSK  "2kbgxi8svgye"
+#define STASSID "FishZ"
+#define STAPSK  "RobinandJason17"
 
-#define STASSID "umd-iot"
-#define STAPSK  "2kbgxi8svgye"
 #define ENABLE_WIFI
 //#define ENABLE_FRAME_WAIT_FOR_KEY
 //#define TIME_DEBUG
@@ -23,7 +26,7 @@
 unsigned long start;
 #undef timeevent(label)
 #undef start();
-#define timeevent(label) {p(label ": "); Serial.println(micros()-start); start = micros();}
+#define timeevent(label) {Serial.print(label ": "); Serial.println(micros()-start); start = micros();}
 #define start() {start = micros();}
 #endif
 
@@ -37,42 +40,35 @@ ESP8266WebServer server(80);
 
 unsigned long lastRunTime;
 
+void handleRoot() {
+    server.send(200, F("text/html"), HTMLTemplate);
+    Serial.println(F("Responding and sending"));
+}
+
 void setup(void) {
     Serial.begin(115200);
-    psl("Starting program!");
+    Serial.println("Starting program!");
     startSelected();
 #ifdef ENABLE_WIFI
+//    WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
-//    IPAddress local_IP(10,108,64,223);
-//    IPAddress gateway(10, 108, 0, 1);
-//    IPAddress subnet(255, 255, 128, 0);
-//        if (!WiFi.config(local_IP, gateway, subnet)) {
-//            Serial.println("STA Failed to configure");
-//            setAll(CRGB::Green);
-//            FastLED.show();
-//            delay(500);
-//            setAll(CRGB::Black);
-//            FastLED.show();
-//        }
+    //Wait for connection
     startLEDs();
 #endif
-    server.on("/", []() {
-        server.send(200, F("text/html"), HTMLTemplate);
-        psl("Responding and sending");
-    });
+    server.on("/", handleRoot);
     server.on("/set", []() {
         Mode oldSelected = selected;
         selected = (Mode) server.arg(0).toInt();
         if (selected != oldSelected) {
             endSelected(oldSelected);
-            ps("Set mode: ");
-            pl(LEDOptions[(byte) selected]);
+            Serial.print(F("Set mode: "));
+            Serial.println(LEDOptions[(byte) selected]);
             startSelected();
         }
-        ps("Set parameters:");
+        Serial.println("Set parameters:");
         fillInArgs(selected, server);
         stringifyParams(selected);
-        pl(spBuffer);
+        Serial.println(spBuffer);
         server.send(200, F("text/plain"), F("Done!"));
     });
 
@@ -83,16 +79,16 @@ void setup(void) {
 
     server.on("/gc", []() {
         stringifyParams(selected);
-        //        Serial.println(spBuffer);
+        Serial.println(spBuffer);
         server.send(200, F("text/plain"), spBuffer);
     });
 
 #ifdef ENABLE_WIFI
     server.begin();
 #endif
-    p(F("Connected to "));
+    Serial.print(F("Connected to "));
     Serial.println(ssid);
-    p(F("Server starting on: "));
+    Serial.print(F("Server starting on: "));
     Serial.println(WiFi.localIP());
     runInitLEDS();
 }
