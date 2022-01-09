@@ -21,6 +21,7 @@ struct Firework {int location; byte maxSpread; int lifetime; byte hue;};
 struct MovingVertex {float location; int iloc; int16_t finalLocation; CRGB currentC; CRGB finalC;};
 #define pfire(x) {Serial.print(F("Firework {")); Serial.print(x.location); Serial.print(F(", ")); Serial.print(x.maxSpread); Serial.print(F(", ")); Serial.print(x.lifetime); Serial.print(F(", ")); Serial.print(x.hue); Serial.println("}");};
 #define pmove(x) {Serial.print(F("MovingVertex {")); Serial.print(x.location); Serial.print(F(", ")); Serial.print(x.finalLocation); Serial.print(F(", ")); prgb(x.currentC); Serial.print(F(", ")); prgb(x.finalC); Serial.println(F("}"));};
+enum class Off_PlaybackMode {Mode_1,Mode_2,Mode_3};
 
 struct RGBRotateData {
     byte speed;
@@ -298,24 +299,11 @@ char HTMLTemplate[] = "<!DOCTYPE html>\n\
 <title>LED Controller</title>\n\
 <link href='https://fonts.googleapis.com/css2?family=Comfortaa&display=swap' rel='stylesheet'>\n\
 <style>\n\
-body {\n\
-font-family: 'Comfortaa', cursive;\n\
-background-color: #cccccc;\n\
-Color: #000088;\n\
-}\n\
-h1 {\n\
-font-size: 10vw;\n\
-margin-top: 1vw;\n\
-margin-bottom: 1vw;\n\
-}\n\
-h3 {\n\
-font-size: 6vw;\n\
-margin-bottom: 1vw;\n\
-}\n\
-select {\n\
-width: min(75vw, 600px);\n\
-font-size: min(6vw, 30px);\n\
-}\n\
+body {font-family: 'Comfortaa', cursive;background-color: #cccccc;Color: #000088;}\n\
+h1 {font-size: 10vw;margin-top: 1vw;margin-bottom: 1vw;}\n\
+h3 {font-size: 6vw;margin-bottom: 1vw;}\n\
+.big-boy {width: min(75vw, 600px);font-size: min(6vw, 30px);}\n\
+div {margin: 5px;}\n\
 </style>\n\
 </head>\n\
 <body>\n\
@@ -396,11 +384,13 @@ e.style.display = ch ? \"block\" : \"none\";\n\
 function request(url, onload) {\n\
 let xhr = new XMLHttpRequest();\n\
 xhr.onload = () => onload(xhr.responseText);\n\
+xhr.onerror = () => document.getElementById('fps').innerHTML = 'Couldn\\\'t connect to the server. Could the ESP8266 be off?';\n\
 xhr.open('GET', url, true);\n\
 xhr.send(null);\n\
 }\n\
 function getFPS() {\n\
 request('/gt', (res) => {\n\
+if (!isNaN(parseFloat(res)))\n\
 document.getElementById('fps').innerHTML = parseFloat(res).toFixed(2) + \" fps\";\n\
 });\n\
 }\n\
@@ -499,7 +489,7 @@ void stringifyParams(Mode selected) {
         sprintf(spBuffer, "%i|%i", selected, d.mr.speed);
         break;
     case OFF:
-        sprintf(spBuffer, "%i", selected);
+        sprintf(spBuffer, "%i|%i", selected);
         break;
     }
 }

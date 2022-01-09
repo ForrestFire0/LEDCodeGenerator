@@ -5,24 +5,11 @@
 <title>LED Controller</title>
 <link href='https://fonts.googleapis.com/css2?family=Comfortaa&display=swap' rel='stylesheet'>
 <style>
-body {
-font-family: 'Comfortaa', cursive;
-background-color: #cccccc;
-Color: #000088;
-}
-h1 {
-font-size: 10vw;
-margin-top: 1vw;
-margin-bottom: 1vw;
-}
-h3 {
-font-size: 6vw;
-margin-bottom: 1vw;
-}
-select {
-width: min(75vw, 600px);
-font-size: min(6vw, 30px);
-}
+body {font-family: 'Comfortaa', cursive;background-color: #cccccc;Color: #000088;}
+h1 {font-size: 10vw;margin-top: 1vw;margin-bottom: 1vw;}
+h3 {font-size: 6vw;margin-bottom: 1vw;}
+.big-boy {width: min(75vw, 600px);font-size: min(6vw, 30px);}
+div {margin: 5px;}
 </style>
 </head>
 <body>
@@ -31,8 +18,8 @@ font-size: min(6vw, 30px);
 <center>
 <h2 id="loading">LOADING...</h2>
 <label>
-<select onchange='change()'>
-<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Shift</option><option value='10'>Brians Function</option><option value='11'>Cylon</option><option value='12'>Twinkle</option><option value='13'>Music</option><option value='14'>Theatre Chase</option><option value='15'>Fire</option><option value='16'>Bouncing Balls</option><option value='17'>Meteor Rain</option><option value='18'>Off</option>\
+<select onchange='change()' class="big-boy">
+<option value='0'>RGB Rotate</option><option value='1'>Random</option><option value='2'>Dot</option><option value='3'>HSV Pulse</option><option value='4'>Solid</option><option value='5'>Pulse</option><option value='6'>Pulse Random</option><option value='7'>Fireworks</option><option value='8'>Waves</option><option value='9'>Shift</option><option value='10'>Off</option>\
 </select>
 </label>
 <div style='margin-bottom: 3vh' id='s'></div>
@@ -103,11 +90,13 @@ e.style.display = ch ? "block" : "none";
 function request(url, onload) {
 let xhr = new XMLHttpRequest();
 xhr.onload = () => onload(xhr.responseText);
+xhr.onerror = () => document.getElementById('fps').innerHTML = 'Couldn\'t connect to the server. Could the ESP8266 be off?';
 xhr.open('GET', url, true);
 xhr.send(null);
 }
 function getFPS() {
 request('/gt', (res) => {
+if (!isNaN(parseFloat(res)))
 document.getElementById('fps').innerHTML = parseFloat(res).toFixed(2) + " fps";
 });
 }

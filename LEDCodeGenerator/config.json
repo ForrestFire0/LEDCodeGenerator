@@ -125,9 +125,9 @@
       "default": [118]
     },
     {
-      "name": "Brians Function",
+      "name": "Off",
       "um": [
-                ["byte Speed",{"max":  500, "default": 1}],
+        ["byte Speed",{"max":  500, "default": 1}],
         ["byte Blend",{"max":  1, "default": 0}],
         ["byte Select",{"max":  8, "default": 2}],
         ["byte Brightness", {"max":  255, "default": 255}]
