@@ -127,8 +127,104 @@
     {
       "name": "Off",
       "um": [
-        ["Select Playback Mode", {"options": ["Mode 1", "Mode 2", "Mode 3"], "default": "Mode 1"}]
-      ]
+        ["byte Speed",{"max":  500, "default": 1}],
+        ["byte Blend",{"max":  1, "default": 0}],
+        ["byte Select",{"max":  8, "default": 2}],
+        ["byte Brightness", {"max":  255, "default": 255}]
+      ],
+      "im": [
+       
+      ],
+      "default": ["1","0", 1]
+    },
+    {
+      "name": "Cylon",
+      "um": [
+        "CRGB Color"
+             ],
+      "im": [
+        "byte i"
+      ],
+      "default": ["#ff0000"]
+    },
+    {
+      "name": "Twinkle",
+      "um": [
+        "CRGB Color",
+        ["byte Select",{"max":  500, "default": 10}]
+             ],
+      "im": [
+        "byte i"
+      ],
+      "default": ["#ff0000"]
+    },
+    {
+      "name": "Music",
+      "um": [
+        "CRGB Color",
+        "bool Random Color",
+        ["byte Time Delay",{"max":  100, "default": 10}],
+        ["byte Max",{"max": 100,"default": 10}]
+        
+             ],
+      "im": [
+        "byte i"
+      ],
+      "default": ["#ff0000",false]
+    },
+        {
+      "name": "Theatre Chase",
+      "um": [
+        "CRGB Color"
+             ],
+      "im": [
+        "byte i"
+      ],
+      "default": ["#ff0000"]
+    },
+    {
+      "name": "Fire",
+      "um": [
+        "CRGB Color",
+        ["byte Cooling",{"max":  1000, "default": 55}],
+        ["byte Sparking",{"max":  1000, "default": 120}],
+        ["byte Delay",{"max":  500, "default": 10}]
+             ],
+      "im": [
+        "byte i"
+      ],
+      "default": ["#ff0000"]
+    },
+    {
+      "name": "Bouncing Balls",
+      "um": [
+        "CRGB Color",
+        ["byte Ball Size",{"max":  20, "default": 4}],
+        ["byte Count",{"max":  10, "default": 3}],
+        ["byte Gravity",{"max":  15, "default": 10}],
+        ["byte height",{"max":  20, "default": 2}] 
+        
+             ],
+      "im": [
+        "byte i"
+      ],
+      "default": ["#ff0000"]
+    },
+     {
+      "name": "Meteor Rain",
+      "um": [
+        ["byte Speed",{"max":  50, "default": 1}]
+        
+             ],
+      "im": [
+        "byte i",
+        "byte flip"
+      ],
+      "default": ["#ff0000"]
+    },
+    
+    {
+      "name": "Off"
     }
   ],
   "insert": [
